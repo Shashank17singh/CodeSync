@@ -92,12 +92,47 @@ export const collabKeys = {
   sync: (projectId: string): string => `collab:${projectId}:sync`,
   awareness: (projectId: string): string => `collab:${projectId}:awareness`,
   control: (roomId: string): string => `room:${roomId}:control`,
+  events: (roomId: string): string => `room:${roomId}:events`,
   lock: (name: string): string => `lock:${name}`,
   treeLock: (projectId: string): string => `tree:${projectId}`,
 }
 
 // Every pub/sub payload starts with the sender's id, so a sender can skip its own messages.
 export const BUS_SENDER_ID_BYTES = 16
+
+// Published by the executor and forwarded by collab to everyone in the room.
+export const executionEventSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('exec.started'),
+    executionId: z.uuid(),
+    userId: z.uuid(),
+    language: z.enum(['PYTHON', 'CPP', 'JAVA', 'JAVASCRIPT']),
+  }),
+  z.object({
+    type: z.literal('exec.output'),
+    executionId: z.uuid(),
+    stream: z.enum(['stdout', 'stderr', 'compile']),
+    seq: z.number().int().positive(),
+    data: z.string().max(16_000),
+  }),
+  z.object({
+    type: z.literal('exec.finished'),
+    executionId: z.uuid(),
+    status: z.enum([
+      'OK',
+      'COMPILE_ERROR',
+      'RUNTIME_ERROR',
+      'TIME_LIMIT_EXCEEDED',
+      'MEMORY_LIMIT_EXCEEDED',
+      'OUTPUT_LIMIT_EXCEEDED',
+      'INTERNAL_ERROR',
+    ]),
+    exitCode: z.number().int().nullable(),
+    timeMs: z.number().int().nullable(),
+    memoryKb: z.number().int().nullable(),
+  }),
+])
+export type ExecutionEvent = z.infer<typeof executionEventSchema>
 
 export const appEnvelopeSchema = z.object({
   v: z.literal(1),

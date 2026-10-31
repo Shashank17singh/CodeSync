@@ -7,6 +7,7 @@ import {
   clientPresenceSchema,
   collabKeys,
   colorForUser,
+  executionEventSchema,
   initialsFor,
   roomControlSchema,
   type PresenceState,
@@ -112,6 +113,7 @@ export class Room {
         awarenessProtocol.applyAwarenessUpdate(this.awareness, update, REMOTE_ORIGIN)
       }),
       bus.subscribe(channels.control(this.roomId), (payload) => this.onControl(payload)),
+      bus.subscribe(channels.events(this.roomId), (payload) => this.onExecutionEvent(payload)),
     ])
   }
 
@@ -270,6 +272,23 @@ export class Room {
       return
     }
     this.applyControl(message)
+  }
+
+  // Comes from a worker that has just handled hostile code, so it is checked like any input.
+  private onExecutionEvent(payload: Uint8Array): void {
+    let event: unknown
+    try {
+      event = JSON.parse(Buffer.from(payload).toString('utf8'))
+    } catch {
+      event = null
+    }
+    const parsed = executionEventSchema.safeParse(event)
+    if (!parsed.success) {
+      this.logger.warn('dropped invalid execution event')
+      return
+    }
+    const frame = encodeApp({ v: 1, t: parsed.data.type, d: parsed.data })
+    for (const connection of this.connections) connection.send(frame)
   }
 
   applyControl(message: RoomControl): void {

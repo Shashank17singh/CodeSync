@@ -63,4 +63,5 @@ export const channels = {
   sync: collabKeys.sync,
   awareness: collabKeys.awareness,
   control: collabKeys.control,
+  events: collabKeys.events,
 }

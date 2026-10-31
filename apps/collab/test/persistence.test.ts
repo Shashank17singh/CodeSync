@@ -7,8 +7,10 @@ import {
   ROOM_ID,
   createHarness,
   fileText,
+  rawClient,
   waitFor,
   type Harness,
+  type RawClient,
 } from './helpers.js'
 
 function storedText(harness: Harness): string {
@@ -142,6 +144,56 @@ describe('persistence', () => {
     await waitFor(() => fileText(session.doc) !== undefined)
     fileText(session.doc).insert(0, 'a')
     await waitFor(() => harness.hub.clients.get(`${PROJECT_ID}:${session.doc.clientID}`) === userId)
+  })
+
+  it('forwards run output from the executor to everyone in the room', async () => {
+    const server = await harness.start()
+    const first = rawClient(server, harness.token(harness.user()))
+    const second = rawClient(server, harness.token(harness.user('viewer'), 'viewer'))
+    await Promise.all([first.opened, second.opened])
+    await waitFor(() => server.connectionCount() === 2)
+    await new Promise((resolve) => setTimeout(resolve, 30))
+
+    const executor = harness.hub.storage()
+    const executionId = '99999999-9999-4999-8999-999999999999'
+    await executor.bus.publish(
+      collabKeys.events(ROOM_ID),
+      Buffer.from(
+        JSON.stringify({
+          type: 'exec.output',
+          executionId,
+          stream: 'stdout',
+          seq: 1,
+          data: 'hello',
+        }),
+      ),
+    )
+
+    const appFrame = (client: RawClient): string | undefined => {
+      const frame = client.frames.find((item) => item[0] === 4)
+      return frame && Buffer.from(frame).toString('utf8')
+    }
+    await waitFor(() => appFrame(first) !== undefined && appFrame(second) !== undefined)
+    expect(appFrame(second)).toContain('exec.output')
+    expect(appFrame(second)).toContain('hello')
+    first.ws.close()
+    second.ws.close()
+  })
+
+  it('drops a malformed execution event instead of forwarding it', async () => {
+    const server = await harness.start()
+    const client = rawClient(server, harness.token(harness.user()))
+    await client.opened
+    await waitFor(() => server.connectionCount() === 1)
+    await new Promise((resolve) => setTimeout(resolve, 30))
+
+    const executor = harness.hub.storage()
+    const channel = collabKeys.events(ROOM_ID)
+    await executor.bus.publish(channel, Buffer.from('not json'))
+    await executor.bus.publish(channel, Buffer.from(JSON.stringify({ type: 'exec.evil' })))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(client.frames.some((item) => item[0] === 4)).toBe(false)
+    client.ws.close()
   })
 
   it('keeps a file the API creates while it holds the tree lock', async () => {

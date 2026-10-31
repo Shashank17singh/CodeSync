@@ -3,8 +3,11 @@
 Real-time collaborative code editor with sandboxed execution, AI review and an online judge.
 
 Built so far: database schema, the collaboration server, presence with live cursors, the rooms and
-projects API, and authentication. See [collab.md](docs/architecture/collab.md),
-[auth.md](docs/architecture/auth.md) and [rest-api.md](docs/architecture/rest-api.md).
+projects API, authentication, and the code execution service. See
+[collab.md](docs/architecture/collab.md), [auth.md](docs/architecture/auth.md),
+[rest-api.md](docs/architecture/rest-api.md) and [the executor README](services/executor/README.md).
+
+The sandbox has not passed its attack suite yet. Do not run untrusted code with it until it has.
 
 ## Setup
 

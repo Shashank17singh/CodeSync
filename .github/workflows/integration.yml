@@ -1,0 +1,87 @@
+name: Integration
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # Everything that needs services a laptop may not have: real Redis and PostgreSQL 16.
+  services:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: codesync
+          POSTGRES_PASSWORD: codesync
+          POSTGRES_DB: codesync
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U codesync"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://codesync:codesync@localhost:5432/codesync
+      TEST_DATABASE_URL: postgresql://codesync:codesync@localhost:5432/codesync
+      TEST_REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm --filter @codesync/db migrate:deploy
+      - run: pnpm test
+
+  # Runs the attack suite on real Docker, with and without gVisor.
+  sandbox:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [runc, runsc]
+    defaults:
+      run:
+        working-directory: services/executor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install gVisor
+        if: matrix.runtime == 'runsc'
+        run: |
+          curl -fsSL https://gvisor.dev/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/gvisor-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main" | sudo tee /etc/apt/sources.list.d/gvisor.list
+          sudo apt-get update
+          sudo apt-get install -y runsc
+          sudo runsc install
+          sudo systemctl restart docker
+      - run: pip install -e '.[dev]'
+      - run: ruff check src tests
+      - run: mypy
+      - run: sh build-images.sh
+      - name: Run the security suite
+        env:
+          SANDBOX_REQUIRE_GVISOR: ${{ matrix.runtime == 'runsc' }}
+          SANDBOX_REPORT: sandbox-report-${{ matrix.runtime }}.md
+        run: pytest -m docker -s
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sandbox-report-${{ matrix.runtime }}
+          path: services/executor/sandbox-report-*.md
