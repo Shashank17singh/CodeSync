@@ -478,6 +478,7 @@ model Contest {
 }
 
 model Submission {
+  isValidation  Boolean   @default(false)
   id            String    @id @default(uuid()) @db.Uuid
   problemId     String    @db.Uuid
   userId        String    @db.Uuid

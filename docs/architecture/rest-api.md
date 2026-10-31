@@ -67,7 +67,7 @@ Details are in [auth.md](auth.md).
 | GET, PATCH | `/me` | Read or update profile and editor settings | User | Built |
 | GET | `/me/notifications` | Paginated notifications | User | Planned |
 | POST | `/me/notifications/:id/read` | Mark as read | User | Planned |
-| GET | `/me/submissions` | Own submission history | User | Planned |
+| GET | `/me/submissions` | Own submission history | User | Built |
 
 ## Execution
 
@@ -111,25 +111,25 @@ Chat messages are sent over WebSocket. REST covers history and moderation.
 | GET | `/reviews/:id` | Read result | Requesting user | Planned |
 | GET | `/reviews/quota` | Remaining daily quota | User | Planned |
 
-## Practice and contests (3.7)
+## Practice and contests
 
 | Method | Path | Purpose | Access | Status |
 | --- | --- | --- | --- | --- |
-| GET | `/problems` | List with filters | User | Planned |
-| GET | `/problems/:slug` | Problem with sample tests only | User | Planned |
-| POST | `/problems` | Create problem | Faculty | Planned |
-| PATCH | `/problems/:id` | Edit problem | Faculty | Planned |
-| POST | `/problems/:id/tests` | Upload `.in` and `.out` zip | Faculty | Planned |
-| POST | `/problems/:id/validate` | Validate with reference solution | Faculty | Planned |
-| POST | `/problems/:slug/submissions` | Submit to the judge | User | Planned |
-| GET | `/submissions/:id` | Verdict and per-test results | Submitter, Faculty | Planned |
-| POST | `/problem-sets` | Create problem set | Faculty | Planned |
-| GET | `/problem-sets/:id/leaderboard` | Problem set leaderboard | User | Planned |
-| POST | `/rooms/:id/contests` | Create contest | Owner | Planned |
-| GET | `/contests/:id` | Contest details and countdown | Viewer+ | Planned |
-| GET | `/contests/:id/leaderboard` | Frozen for the final 15 minutes | Viewer+ | Planned |
-| POST | `/problems/:id/plagiarism` | Start similarity analysis | Faculty | Planned |
-| GET | `/problems/:id/plagiarism` | Similarity report | Faculty | Planned |
+| GET | `/problems` | List with filters | User | Built |
+| GET | `/problems/:slug` | Problem with sample tests only | User | Built |
+| POST | `/problems` | Create problem | Faculty | Built |
+| PATCH | `/problems/:id` | Edit problem | Faculty | Built |
+| POST | `/problems/:id/tests` | Upload `.in` and `.out` zip | Faculty | Built |
+| POST | `/problems/:id/validate` | Validate with reference solution | Faculty | Built |
+| POST | `/problems/:slug/submissions` | Submit to the judge | User | Built |
+| GET | `/submissions/:id` | Verdict and per-test results | Submitter, Faculty | Built |
+| POST | `/problem-sets` | Create problem set | Faculty | Built |
+| GET | `/problem-sets/:id/leaderboard` | Problem set leaderboard | User | Built |
+| POST | `/rooms/:id/contests` | Create contest | Owner | Built |
+| GET | `/contests/:id` | Contest details and countdown | Viewer+ | Built |
+| GET | `/contests/:id/leaderboard` | Frozen for the final 15 minutes | Viewer+ | Built |
+| POST | `/problems/:id/plagiarism` | Start similarity analysis | Faculty | Built |
+| GET | `/problems/:id/plagiarism` | Similarity report | Faculty | Built |
 
 ## Internal and operations
 
@@ -138,6 +138,6 @@ Chat messages are sent over WebSocket. REST covers history and moderation.
 | GET | `/healthz` (no prefix) | Liveness | Public | Built |
 | POST | `/internal/executions/:id/started` | Worker claims a run, answers whether to proceed | Service | Built |
 | POST | `/internal/executions/:id/result` | Worker reports final result | Service | Built |
-| POST | `/internal/submissions/:id/result` | Worker reports judge result | Service | Planned |
-| GET | `/internal/problems/:id/testcases` | Worker fetches judge data | Service | Planned |
+| POST | `/internal/submissions/:id/result` | Worker reports judge result | Service | Built |
+| GET | `/internal/submissions/:id/package` | Worker claims a submission and fetches its tests | Service | Built |
 | GET | `/metrics` on each executor worker | Prometheus metrics | Internal network | Built |

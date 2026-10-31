@@ -67,12 +67,18 @@ export class MemoryTransport implements BridgeTransport {
 
 export class MemoryExecutionQueue implements ExecutionQueue {
   readonly jobs: RunJob[] = []
+  readonly judgeJobs: string[] = []
   failure: Error | null = null
   waiting: number | null = null
 
   async enqueueRun(job: RunJob): Promise<void> {
     if (this.failure) throw this.failure
     this.jobs.push(job)
+  }
+
+  async enqueueJudge(submissionId: string): Promise<void> {
+    if (this.failure) throw this.failure
+    this.judgeJobs.push(submissionId)
   }
 
   async waitingCount(): Promise<number> {

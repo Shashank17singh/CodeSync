@@ -14,8 +14,9 @@ import pytest
 from prometheus_client import generate_latest
 from pydantic import ValidationError
 
+from executor.judge import JudgePackage, JudgeResult, Verdict
 from executor.metrics import Metrics
-from executor.models import RunRequest, RunResult, Status
+from executor.models import Language, RunRequest, RunResult, Status
 from executor.service import (
     ApiReporter,
     Heartbeat,
@@ -46,6 +47,8 @@ class FakeReporter:
         self.attempts: dict[str, int] = {}
         self.results: dict[str, RunResult] = {}
         self.fail_result = False
+        self.package: JudgePackage | None = None
+        self.judged: list[JudgeResult] = []
 
     async def started(self, execution_id: str, worker_id: str) -> bool:
         if execution_id in self.results:
@@ -60,6 +63,12 @@ class FakeReporter:
         if self.fail_result:
             raise ReportError("api down")
         self.results[str(result.execution_id)] = result
+
+    async def judge_package(self, submission_id: str) -> JudgePackage | None:
+        return self.package
+
+    async def judge_result(self, result: JudgeResult) -> None:
+        self.judged.append(result)
 
 
 def ok_runner(request: RunRequest) -> RunResult:
@@ -379,6 +388,47 @@ class TestJobService:
             return peak
 
         assert run(scenario()) == 3
+
+
+class TestJudgeJobs:
+    def package(self) -> JudgePackage:
+        return JudgePackage(
+            submission_id=uuid4(),
+            language=Language.PYTHON,
+            source="print(1)",
+            time_limit_ms=1000,
+            memory_limit_mb=256,
+            tests=(),
+        )
+
+    def test_judges_and_reports(self) -> None:
+        reporter = FakeReporter()
+        reporter.package = self.package()
+
+        def fake_judge(package: JudgePackage) -> JudgeResult:
+            return JudgeResult(submission_id=package.submission_id, verdict=Verdict.ACCEPTED)
+
+        worker = JobService(
+            PrioritySlots(2, 1),
+            ok_runner,
+            reporter,
+            Metrics(),
+            "w",
+            judge_runner=fake_judge,
+        )
+        assert run(worker.handle_judge(str(uuid4()), 0)) == "ACCEPTED"
+        assert reporter.judged[0].verdict is Verdict.ACCEPTED
+
+    def test_skips_a_submission_that_is_already_finished(self) -> None:
+        worker = JobService(
+            PrioritySlots(2, 1),
+            ok_runner,
+            FakeReporter(),
+            Metrics(),
+            "w",
+            judge_runner=lambda _p: pytest.fail("judged a finished submission"),
+        )
+        assert run(worker.handle_judge(str(uuid4()), 0)) == "declined"
 
 
 class TestMetrics:

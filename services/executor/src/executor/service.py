@@ -12,6 +12,7 @@ import redis.asyncio as redis_async
 import structlog
 from pydantic import ValidationError
 
+from .judge import JudgePackage, JudgeResult
 from .metrics import Metrics
 from .models import RunRequest, RunResult
 from .slots import PrioritySlots, QueueName
@@ -25,8 +26,10 @@ REPORT_ATTEMPTS = 4
 REPORT_BACKOFF_S = 0.5
 REPORT_TIMEOUT_S = 10.0
 
-Poster = Callable[[str, dict[str, Any]], tuple[int, dict[str, Any]]]
+# A body of None makes it a GET.
+Poster = Callable[[str, dict[str, Any] | None], tuple[int, dict[str, Any]]]
 Runner = Callable[[RunRequest], RunResult]
+JudgeRunner = Callable[[JudgePackage], JudgeResult]
 
 
 class ReportError(Exception):
@@ -38,17 +41,21 @@ class Reporter(Protocol):
 
     async def result(self, result: RunResult) -> None: ...
 
+    async def judge_package(self, submission_id: str) -> JudgePackage | None: ...
+
+    async def judge_result(self, result: JudgeResult) -> None: ...
+
 
 def http_poster(base_url: str, token: str) -> Poster:
     if not base_url.startswith(("http://", "https://")):
         raise ValueError("API_URL must be http or https")
 
-    def post(path: str, body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    def post(path: str, body: dict[str, Any] | None) -> tuple[int, dict[str, Any]]:
         request = urllib.request.Request(  # noqa: S310
             f"{base_url}{path}",
-            data=json.dumps(body).encode(),
+            data=None if body is None else json.dumps(body).encode(),
             headers={"content-type": "application/json", "x-service-token": token},
-            method="POST",
+            method="GET" if body is None else "POST",
         )
         try:
             with urllib.request.urlopen(request, timeout=REPORT_TIMEOUT_S) as response:  # noqa: S310
@@ -69,7 +76,7 @@ class ApiReporter:
         self._post = post
         self._backoff_s = backoff_s
 
-    async def _send(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
+    async def _send(self, path: str, body: dict[str, Any] | None) -> dict[str, Any]:
         problem = "no attempt made"
         for attempt in range(REPORT_ATTEMPTS):
             if attempt > 0:
@@ -100,6 +107,19 @@ class ApiReporter:
         )
 
 
+    async def judge_package(self, submission_id: str) -> JudgePackage | None:
+        payload = await self._send(f"/api/v1/internal/submissions/{submission_id}/package", None)
+        if not payload.get("proceed"):
+            return None
+        return JudgePackage.model_validate(payload["package"])
+
+    async def judge_result(self, result: JudgeResult) -> None:
+        await self._send(
+            f"/api/v1/internal/submissions/{result.submission_id}/result",
+            result.model_dump(mode="json", exclude={"submission_id"}),
+        )
+
+
 class JobService:
     """What a worker does with one job, separate from how the job arrived."""
 
@@ -111,7 +131,9 @@ class JobService:
         metrics: Metrics,
         worker_id: str,
         clock: Callable[[], float] = time.time,
+        judge_runner: JudgeRunner | None = None,
     ) -> None:
+        self._judge_runner = judge_runner
         self._slots = slots
         self._runner = runner
         self._reporter = reporter
@@ -133,6 +155,31 @@ class JobService:
             self._metrics.slots_busy.set(self._slots.busy)
             try:
                 return await self._run(queue, request, enqueued_at_ms)
+            finally:
+                self._metrics.slots_busy.set(self._slots.busy - 1)
+
+    async def handle_judge(self, submission_id: str, enqueued_at_ms: int) -> str:
+        if self._judge_runner is None:
+            raise RuntimeError("this worker has no judge")
+        queue = QueueName.JUDGE
+        async with self._slots.slot(queue):
+            self._metrics.slots_busy.set(self._slots.busy)
+            try:
+                waited_s = max(0.0, self._clock() - enqueued_at_ms / 1000)
+                self._metrics.wait_seconds.labels(queue=queue.value).observe(waited_s)
+                package = await self._reporter.judge_package(submission_id)
+                if package is None:
+                    return "declined"
+                started = time.monotonic()
+                result = await asyncio.to_thread(self._judge_runner, package)
+                self._metrics.run_seconds.labels(
+                    queue=queue.value, language=package.language.value
+                ).observe(time.monotonic() - started)
+                await self._reporter.judge_result(result)
+                return result.verdict.value
+            except ReportError:
+                self._metrics.failures.labels(queue=queue.value, reason="report_failed").inc()
+                raise
             finally:
                 self._metrics.slots_busy.set(self._slots.busy - 1)
 

@@ -82,7 +82,7 @@ function detectLanguage(path: string): RunJob['language'] {
   return language
 }
 
-function assertServiceToken(request: FastifyRequest, expected: string): void {
+export function assertServiceToken(request: FastifyRequest, expected: string): void {
   const received = request.headers['x-service-token']
   const digest = (value: string): Buffer => createHash('sha256').update(value).digest()
   if (typeof received !== 'string' || !timingSafeEqual(digest(received), digest(expected))) {

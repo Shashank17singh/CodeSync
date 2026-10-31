@@ -17,6 +17,7 @@ import { ACCESS_TOKEN_AUDIENCE, SessionService } from './modules/auth/sessions.j
 import { registerExecutionRoutes } from './modules/executions.js'
 import { registerFileRoutes } from './modules/files.js'
 import { registerInviteRoutes } from './modules/invites.js'
+import { registerProblemRoutes } from './modules/problems.js'
 import { registerProfileRoutes } from './modules/profile.js'
 import { registerRoomRoutes } from './modules/rooms.js'
 
@@ -147,6 +148,7 @@ export function buildApp(services: AppServices): FastifyInstance {
       registerInviteRoutes(api, deps)
       registerFileRoutes(api, deps)
       registerExecutionRoutes(api, deps)
+      registerProblemRoutes(api, deps)
     },
     { prefix: '/api/v1' },
   )

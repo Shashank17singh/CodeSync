@@ -15,14 +15,17 @@ export interface RunJob {
 
 export interface ExecutionQueue {
   enqueueRun(job: RunJob): Promise<void>
+  enqueueJudge(submissionId: string): Promise<void>
   waitingCount(): Promise<number>
 }
 
 export class BullExecutionQueue implements ExecutionQueue {
   private readonly run: Queue
+  private readonly judge: Queue
 
   constructor(connection: Redis) {
     this.run = new Queue(EXECUTION_QUEUES.run, { connection })
+    this.judge = new Queue(EXECUTION_QUEUES.judge, { connection })
   }
 
   async enqueueRun(job: RunJob): Promise<void> {
@@ -37,21 +40,36 @@ export class BullExecutionQueue implements ExecutionQueue {
     })
   }
 
+  async enqueueJudge(submissionId: string): Promise<void> {
+    // Only the id: workers fetch the source and hidden tests from the API when they start.
+    await this.judge.add(
+      'judge',
+      { submission_id: submissionId },
+      {
+        jobId: submissionId,
+        attempts: 1,
+        removeOnComplete: { count: 1000 },
+        removeOnFail: { count: 1000 },
+      },
+    )
+  }
+
   waitingCount(): Promise<number> {
     return this.run.getWaitingCount()
   }
 
-  close(): Promise<void> {
-    return this.run.close()
+  async close(): Promise<void> {
+    await Promise.all([this.run.close(), this.judge.close()])
   }
 }
 
-export function watchRunFailures(
+export function watchQueueFailures(
+  queue: string,
   redisUrl: string,
   onFailed: (executionId: string) => void | Promise<void>,
 ): QueueEvents {
   const { hostname, port, username, password, pathname } = new URL(redisUrl)
-  const events = new QueueEvents(EXECUTION_QUEUES.run, {
+  const events = new QueueEvents(queue, {
     connection: {
       host: hostname,
       port: Number(port || 6379),

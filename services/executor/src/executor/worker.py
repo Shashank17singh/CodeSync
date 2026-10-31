@@ -13,6 +13,7 @@ from prometheus_client import start_http_server
 
 from .docker_engine import DockerEngine
 from .events import RedisEvents
+from .judge import judge
 from .metrics import Metrics
 from .pool import SandboxPool
 from .runner import execute
@@ -82,16 +83,25 @@ async def main() -> None:
         ApiReporter(http_poster(settings.api_url, settings.internal_service_token)),
         metrics,
         settings.worker_id,
+        judge_runner=lambda package: judge(package, pool, settings.limits),
     )
 
     async def process_run(job: Any, _token: str) -> str:
         return await service.handle(QueueName.RUN, job.data, job.timestamp)
 
-    # The judge queue gets its consumer with the judge in 3.7. Its slot rules already apply.
     run_worker = Worker(
         QueueName.RUN.value, process_run, worker_options(settings.redis_url, slots.total)
     )
-    run_worker.on("error", lambda error, *_: log.error("worker_error", error=str(error)))
+    async def process_judge(job: Any, _token: str) -> str:
+        return await service.handle_judge(job.data["submission_id"], job.timestamp)
+
+    judge_worker = Worker(
+        QueueName.JUDGE.value,
+        process_judge,
+        worker_options(settings.redis_url, slots.judge_capacity),
+    )
+    for worker in (run_worker, judge_worker):
+        worker.on("error", lambda error, *_: log.error("worker_error", error=str(error)))
 
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
@@ -111,6 +121,7 @@ async def main() -> None:
 
     # Finishes jobs already running. A stuck run is bounded by the sandbox time limits.
     await run_worker.close()
+    await judge_worker.close()
     await asyncio.gather(*background)
     for queue in queues.values():
         await queue.close()
