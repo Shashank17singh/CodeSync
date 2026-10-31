@@ -135,6 +135,8 @@ export function registerExecutionRoutes(app: FastifyInstance, deps: AppDeps): vo
     if (!project) throw notFound('Project')
     if (!project.files.some((file) => file.path === entryPath)) throw notFound('File')
 
+    // Checked in order, so attempts refused for one user do not use up the room's budget.
+    // Otherwise a single person hammering Run could lock everyone else in the room out.
     await enforceRateLimits(
       limiter,
       [
@@ -143,14 +145,21 @@ export function registerExecutionRoutes(app: FastifyInstance, deps: AppDeps): vo
           limit: EXECUTION_LIMITS.runsPerUserPerMinute,
           windowMs: MINUTE,
         },
+      ],
+      `You can run ${EXECUTION_LIMITS.runsPerUserPerMinute} programs a minute. Wait a moment and ` +
+        'try again.',
+    )
+    await enforceRateLimits(
+      limiter,
+      [
         {
           key: `rate:run:room:${roomId}`,
           limit: EXECUTION_LIMITS.runsPerRoomPerMinute,
           windowMs: MINUTE,
         },
       ],
-      `You can run ${EXECUTION_LIMITS.runsPerUserPerMinute} programs a minute, and a room ` +
-        `${EXECUTION_LIMITS.runsPerRoomPerMinute}. Wait a moment and try again.`,
+      `This room has reached its limit of ${EXECUTION_LIMITS.runsPerRoomPerMinute} runs a ` +
+        'minute. Wait a moment and try again.',
     )
 
     if ((await queue.waitingCount()) >= EXECUTION_LIMITS.maxWaitingRuns) {

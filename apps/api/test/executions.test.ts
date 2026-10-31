@@ -376,6 +376,12 @@ describe('run rate limits', () => {
     expect(rows).toBe(EXECUTION_LIMITS.runsPerRoomPerMinute)
   })
 
+  it('does not let one person hammering Run use up the room for everyone else', async () => {
+    const fixture = await createRoomFixture(api)
+    for (let attempt = 0; attempt < 100; attempt++) await run(fixture, fixture.editor)
+    expect((await run(fixture, fixture.owner)).statusCode).toBe(202)
+  })
+
   it('queues nothing for a refused run', async () => {
     const fixture = await createRoomFixture(api)
     for (let index = 0; index < EXECUTION_LIMITS.runsPerUserPerMinute + 3; index++) {
