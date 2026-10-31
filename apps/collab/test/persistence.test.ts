@@ -1,3 +1,4 @@
+import { applyLineFix } from '@codesync/collab-client'
 import { collabKeys } from '@codesync/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
@@ -240,6 +241,33 @@ describe('persistence', () => {
     await waitFor(() => !session.provider.wsconnected)
     await waitFor(() => server.rooms.activeRooms === 0)
     expect(harness.hub.docs.has(PROJECT_ID)).toBe(false)
+  })
+
+  it('applies a review fix as one edit that everyone sees and that can be undone', async () => {
+    const server = await harness.start()
+    const author = await harness.connect(server, harness.user())
+    const other = await harness.connect(server, harness.user())
+    await waitFor(() => fileText(author.doc) !== undefined && fileText(other.doc) !== undefined)
+    const text = fileText(author.doc)
+    text.insert(0, 'a = 1\nb = 2\nc = 3\n')
+    await waitFor(() => fileText(other.doc).length === text.length)
+
+    const undo = new Y.UndoManager(text)
+    const fix = { lineStart: 2, lineEnd: 2, replacement: 'b = 20' }
+    expect(applyLineFix(text, fix, 'b = 2')).toBe(true)
+    await waitFor(() => fileText(other.doc).toString() === 'a = 1\nb = 20\nc = 3\n')
+
+    undo.undo()
+    await waitFor(() => fileText(other.doc).toString() === 'a = 1\nb = 2\nc = 3\n')
+  })
+
+  it('refuses a review fix when the code has changed since the review', () => {
+    const doc = new Y.Doc()
+    const text = doc.getText('t')
+    text.insert(0, 'a = 1\nb = 99\n')
+    expect(applyLineFix(text, { lineStart: 2, lineEnd: 2, replacement: 'x' }, 'b = 2')).toBe(false)
+    expect(applyLineFix(text, { lineStart: 9, lineEnd: 9, replacement: 'x' }, '')).toBe(false)
+    expect(text.toString()).toBe('a = 1\nb = 99\n')
   })
 
   it('adds a file created through the API to connected clients', async () => {

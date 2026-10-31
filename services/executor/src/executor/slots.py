@@ -14,6 +14,7 @@ class QueueName(StrEnum):
 
     RUN = "run"
     JUDGE = "judge"
+    REVIEW = "review"
 
 
 @dataclass

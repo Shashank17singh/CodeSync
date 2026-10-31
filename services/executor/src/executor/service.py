@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from .judge import JudgePackage, JudgeResult
 from .metrics import Metrics
 from .models import RunRequest, RunResult
+from .review import ReviewOutput, ReviewRequest
 from .slots import PrioritySlots, QueueName
 
 log = structlog.get_logger()
@@ -30,6 +31,7 @@ REPORT_TIMEOUT_S = 10.0
 Poster = Callable[[str, dict[str, Any] | None], tuple[int, dict[str, Any]]]
 Runner = Callable[[RunRequest], RunResult]
 JudgeRunner = Callable[[JudgePackage], JudgeResult]
+ReviewRunner = Callable[[ReviewRequest], ReviewOutput]
 
 
 class ReportError(Exception):
@@ -44,6 +46,8 @@ class Reporter(Protocol):
     async def judge_package(self, submission_id: str) -> JudgePackage | None: ...
 
     async def judge_result(self, result: JudgeResult) -> None: ...
+
+    async def review_result(self, result: ReviewOutput) -> None: ...
 
 
 def http_poster(base_url: str, token: str) -> Poster:
@@ -119,6 +123,12 @@ class ApiReporter:
             result.model_dump(mode="json", exclude={"submission_id"}),
         )
 
+    async def review_result(self, result: ReviewOutput) -> None:
+        await self._send(
+            f"/api/v1/internal/reviews/{result.review_id}/result",
+            result.model_dump(mode="json", exclude={"review_id"}),
+        )
+
 
 class JobService:
     """What a worker does with one job, separate from how the job arrived."""
@@ -132,8 +142,10 @@ class JobService:
         worker_id: str,
         clock: Callable[[], float] = time.time,
         judge_runner: JudgeRunner | None = None,
+        review_runner: ReviewRunner | None = None,
     ) -> None:
         self._judge_runner = judge_runner
+        self._review_runner = review_runner
         self._slots = slots
         self._runner = runner
         self._reporter = reporter
@@ -155,6 +167,23 @@ class JobService:
             self._metrics.slots_busy.set(self._slots.busy)
             try:
                 return await self._run(queue, request, enqueued_at_ms)
+            finally:
+                self._metrics.slots_busy.set(self._slots.busy - 1)
+
+    async def handle_review(self, data: Mapping[str, Any]) -> str:
+        if self._review_runner is None:
+            raise RuntimeError("this worker has no reviewer")
+        request = ReviewRequest.model_validate(data)
+        # Shares slots with judging, so an AI review never holds up a person pressing Run.
+        async with self._slots.slot(QueueName.REVIEW):
+            self._metrics.slots_busy.set(self._slots.busy)
+            try:
+                result = await asyncio.to_thread(self._review_runner, request)
+                await self._reporter.review_result(result)
+                return result.status
+            except ReportError:
+                self._metrics.failures.labels(queue="review", reason="report_failed").inc()
+                raise
             finally:
                 self._metrics.slots_busy.set(self._slots.busy - 1)
 

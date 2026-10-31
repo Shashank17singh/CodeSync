@@ -10,6 +10,7 @@ export interface RateLimitResult {
 export interface RateLimiter {
   hit(key: string, limit: number, windowMs: number): Promise<RateLimitResult>
   reset(key: string): Promise<void>
+  count(key: string): Promise<number>
 }
 
 export interface RateRule {
@@ -78,6 +79,10 @@ export class RedisRateLimiter implements RateLimiter {
   async reset(key: string): Promise<void> {
     await this.redis.del(key)
   }
+
+  async count(key: string): Promise<number> {
+    return Number((await this.redis.get(key)) ?? 0)
+  }
 }
 
 export class MemoryRateLimiter implements RateLimiter {
@@ -95,5 +100,10 @@ export class MemoryRateLimiter implements RateLimiter {
 
   async reset(key: string): Promise<void> {
     this.counters.delete(key)
+  }
+
+  async count(key: string): Promise<number> {
+    const counter = this.counters.get(key)
+    return counter && counter.resetAt > Date.now() ? counter.count : 0
   }
 }

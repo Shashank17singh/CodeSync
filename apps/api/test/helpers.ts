@@ -9,7 +9,7 @@ import type { ApiConfig } from '../src/config.js'
 import type { InviteEmail, LinkEmail, Mailer } from '../src/mailer.js'
 import type { OAuthProviders } from '../src/modules/auth/providers.js'
 import { MemoryRateLimiter, type RateLimiter } from '../src/modules/auth/rateLimit.js'
-import type { ExecutionQueue, RunJob } from '../src/queue/executionQueue.js'
+import type { ExecutionQueue, ReviewJob, RunJob } from '../src/queue/executionQueue.js'
 
 export const config: ApiConfig = {
   accessTokenSecret: 'access-secret-with-at-least-32-characters',
@@ -68,6 +68,7 @@ export class MemoryTransport implements BridgeTransport {
 export class MemoryExecutionQueue implements ExecutionQueue {
   readonly jobs: RunJob[] = []
   readonly judgeJobs: string[] = []
+  readonly reviewJobs: ReviewJob[] = []
   failure: Error | null = null
   waiting: number | null = null
 
@@ -79,6 +80,11 @@ export class MemoryExecutionQueue implements ExecutionQueue {
   async enqueueJudge(submissionId: string): Promise<void> {
     if (this.failure) throw this.failure
     this.judgeJobs.push(submissionId)
+  }
+
+  async enqueueReview(job: ReviewJob): Promise<void> {
+    if (this.failure) throw this.failure
+    this.reviewJobs.push(job)
   }
 
   async waitingCount(): Promise<number> {

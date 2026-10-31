@@ -103,13 +103,13 @@ Chat messages are sent over WebSocket. REST covers history and moderation.
 | PATCH | `/comments/:id` | Edit, resolve or reopen | Author, Owner | Planned |
 | DELETE | `/comments/:id` | Delete comment | Author, Owner | Planned |
 
-## AI review (3.8)
+## AI review
 
 | Method | Path | Purpose | Access | Status |
 | --- | --- | --- | --- | --- |
-| POST | `/reviews` | Review, explain or diagnose | Viewer+, or User in practice | Planned |
-| GET | `/reviews/:id` | Read result | Requesting user | Planned |
-| GET | `/reviews/quota` | Remaining daily quota | User | Planned |
+| POST | `/reviews` | Review, explain or diagnose | Viewer+, or User in practice | Built |
+| GET | `/reviews/:id` | Read result | Requesting user | Built |
+| GET | `/reviews/quota` | Remaining daily quota | User | Built |
 
 ## Practice and contests
 
@@ -140,4 +140,5 @@ Chat messages are sent over WebSocket. REST covers history and moderation.
 | POST | `/internal/executions/:id/result` | Worker reports final result | Service | Built |
 | POST | `/internal/submissions/:id/result` | Worker reports judge result | Service | Built |
 | GET | `/internal/submissions/:id/package` | Worker claims a submission and fetches its tests | Service | Built |
+| POST | `/internal/reviews/:id/result` | Worker reports a review | Service | Built |
 | GET | `/metrics` on each executor worker | Prometheus metrics | Internal network | Built |

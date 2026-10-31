@@ -5,6 +5,7 @@ import * as Y from 'yjs'
 import { PresenceTracker } from './presence.js'
 
 export * from './presence.js'
+export * from './reviewFix.js'
 
 export interface CollabSessionOptions {
   serverUrl: string

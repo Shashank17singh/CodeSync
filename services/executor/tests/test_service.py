@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from executor.judge import JudgePackage, JudgeResult, Verdict
 from executor.metrics import Metrics
 from executor.models import Language, RunRequest, RunResult, Status
+from executor.review import ReviewOutput, ReviewRequest
 from executor.service import (
     ApiReporter,
     Heartbeat,
@@ -49,6 +50,7 @@ class FakeReporter:
         self.fail_result = False
         self.package: JudgePackage | None = None
         self.judged: list[JudgeResult] = []
+        self.reviewed: list[ReviewOutput] = []
 
     async def started(self, execution_id: str, worker_id: str) -> bool:
         if execution_id in self.results:
@@ -69,6 +71,9 @@ class FakeReporter:
 
     async def judge_result(self, result: JudgeResult) -> None:
         self.judged.append(result)
+
+    async def review_result(self, result: ReviewOutput) -> None:
+        self.reviewed.append(result)
 
 
 def ok_runner(request: RunRequest) -> RunResult:
@@ -429,6 +434,50 @@ class TestJudgeJobs:
             judge_runner=lambda _p: pytest.fail("judged a finished submission"),
         )
         assert run(worker.handle_judge(str(uuid4()), 0)) == "declined"
+
+
+class TestReviewJobs:
+    def test_reviews_and_reports(self) -> None:
+        reporter = FakeReporter()
+
+        def fake_review(request: ReviewRequest) -> ReviewOutput:
+            return ReviewOutput(review_id=request.review_id, status="DONE")
+
+        worker = JobService(
+            PrioritySlots(2, 1), ok_runner, reporter, Metrics(), "w", review_runner=fake_review
+        )
+        data = {
+            "review_id": str(uuid4()),
+            "mode": "REVIEW",
+            "language": "PYTHON",
+            "code": "x = 1",
+            "error_output": "",
+            "practice": False,
+        }
+        assert run(worker.handle_review(data)) == "DONE"
+        assert reporter.reviewed[0].status == "DONE"
+
+    def test_waits_behind_a_person_pressing_run(self) -> None:
+        async def scenario() -> list[str]:
+            slots = PrioritySlots(1, 0)
+            order: list[str] = []
+            release = asyncio.Event()
+
+            async def job(queue: QueueName, name: str) -> None:
+                async with slots.slot(queue):
+                    order.append(name)
+                    await release.wait()
+
+            holder = asyncio.create_task(job(QueueName.RUN, "first"))
+            await asyncio.sleep(0)
+            review = asyncio.create_task(job(QueueName.REVIEW, "review"))
+            run_job = asyncio.create_task(job(QueueName.RUN, "second"))
+            await asyncio.sleep(0.01)
+            release.set()
+            await asyncio.gather(holder, review, run_job)
+            return order
+
+        assert run(scenario()) == ["first", "second", "review"]
 
 
 class TestMetrics:

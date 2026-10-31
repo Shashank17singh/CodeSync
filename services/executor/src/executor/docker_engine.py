@@ -187,9 +187,12 @@ class DockerEngine:
         return f"{self._settings.image_prefix}-{name}:{self._settings.image_tag}"
 
     def create(self, language: Language) -> Sandbox:
+        return self._create(language, self._image(language))
+
+    def _create(self, language: Language, image: str) -> Sandbox:
         spec = container_spec(
             language=language,
-            image=self._image(language),
+            image=image,
             settings=self._settings,
             gvisor=self.gvisor,
         )
@@ -203,6 +206,11 @@ class DockerEngine:
                 self._api.remove_container(container["Id"], force=True)
             raise SandboxError(f"could not create {language} sandbox") from error
         return DockerSandbox(self._api, container["Id"])
+
+    def create_analyzer(self) -> Sandbox:
+        return self._create(
+            Language.PYTHON, f"{self._settings.image_prefix}-analysis:{self._settings.image_tag}"
+        )
 
     def reap_orphans(self) -> int:
         """Removes sandboxes this worker left behind when it last crashed."""

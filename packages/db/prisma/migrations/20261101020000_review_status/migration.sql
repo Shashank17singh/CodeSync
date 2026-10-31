@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Review" ADD COLUMN     "explanation" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "status" VARCHAR(16) NOT NULL DEFAULT 'PENDING';

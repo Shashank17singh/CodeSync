@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import signal
 from typing import Any
 
@@ -14,8 +15,10 @@ from prometheus_client import start_http_server
 from .docker_engine import DockerEngine
 from .events import RedisEvents
 from .judge import judge
+from .llm import ClaudeClient, LLMClient
 from .metrics import Metrics
 from .pool import SandboxPool
+from .review import run_review
 from .runner import execute
 from .service import ApiReporter, Heartbeat, JobService, http_poster
 from .settings import Settings
@@ -71,6 +74,9 @@ async def main() -> None:
     pool = SandboxPool(engine, size=settings.pool_size, max_idle_s=settings.pool_max_idle_s)
     pool.warm()
 
+    # Without a key, reviews still run and report what the static analyzers found.
+    llm: LLMClient | None = ClaudeClient() if os.environ.get("ANTHROPIC_API_KEY") else None
+
     metrics = Metrics()
     start_http_server(settings.metrics_port, addr=settings.metrics_host, registry=metrics.registry)
 
@@ -84,6 +90,7 @@ async def main() -> None:
         metrics,
         settings.worker_id,
         judge_runner=lambda package: judge(package, pool, settings.limits),
+        review_runner=lambda request: run_review(request, engine, llm),
     )
 
     async def process_run(job: Any, _token: str) -> str:
@@ -100,7 +107,15 @@ async def main() -> None:
         process_judge,
         worker_options(settings.redis_url, slots.judge_capacity),
     )
-    for worker in (run_worker, judge_worker):
+    async def process_review(job: Any, _token: str) -> str:
+        return await service.handle_review(job.data)
+
+    review_worker = Worker(
+        QueueName.REVIEW.value,
+        process_review,
+        worker_options(settings.redis_url, slots.judge_capacity),
+    )
+    for worker in (run_worker, judge_worker, review_worker):
         worker.on("error", lambda error, *_: log.error("worker_error", error=str(error)))
 
     stop = asyncio.Event()
@@ -122,6 +137,7 @@ async def main() -> None:
     # Finishes jobs already running. A stuck run is bounded by the sandbox time limits.
     await run_worker.close()
     await judge_worker.close()
+    await review_worker.close()
     await asyncio.gather(*background)
     for queue in queues.values():
         await queue.close()

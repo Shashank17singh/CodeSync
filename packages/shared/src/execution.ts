@@ -1,6 +1,14 @@
 export const EXECUTION_QUEUES = {
   run: 'run',
   judge: 'judge',
+  review: 'review',
+} as const
+
+export const REVIEW_LIMITS = {
+  maxLines: 400,
+  maxCodeChars: 256 * 1024,
+  maxErrorChars: 8 * 1024,
+  perUserPerDay: 20,
 } as const
 
 export const EXECUTION_LIMITS = {

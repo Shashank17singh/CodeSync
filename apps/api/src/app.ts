@@ -19,6 +19,7 @@ import { registerFileRoutes } from './modules/files.js'
 import { registerInviteRoutes } from './modules/invites.js'
 import { registerProblemRoutes } from './modules/problems.js'
 import { registerProfileRoutes } from './modules/profile.js'
+import { registerReviewRoutes } from './modules/reviews.js'
 import { registerRoomRoutes } from './modules/rooms.js'
 
 const PRISMA_UNIQUE_VIOLATION = 'P2002'
@@ -149,6 +150,7 @@ export function buildApp(services: AppServices): FastifyInstance {
       registerFileRoutes(api, deps)
       registerExecutionRoutes(api, deps)
       registerProblemRoutes(api, deps)
+      registerReviewRoutes(api, deps)
     },
     { prefix: '/api/v1' },
   )

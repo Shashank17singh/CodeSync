@@ -524,6 +524,8 @@ model PlagiarismMatch {
 
 // problemId is set in practice mode, which restricts output to hints and is part of the cache key.
 model Review {
+  status      String     @default("PENDING") @db.VarChar(16)
+  explanation String     @default("")
   id          String     @id @default(uuid()) @db.Uuid
   userId      String     @db.Uuid
   roomId      String?    @db.Uuid
