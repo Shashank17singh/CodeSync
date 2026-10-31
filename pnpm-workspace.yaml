@@ -4,6 +4,7 @@ packages:
 minimumReleaseAgeExclude:
   - ws@8.22.1
 allowBuilds:
+  '@embedded-postgres/windows-x64': true
   '@prisma/engines': true
   esbuild: true
   prisma: true

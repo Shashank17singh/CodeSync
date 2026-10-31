@@ -5,6 +5,7 @@ import {
   YDOC_ROOTS,
   appEnvelopeSchema,
   clientPresenceSchema,
+  collabKeys,
   colorForUser,
   initialsFor,
   roomControlSchema,
@@ -71,6 +72,7 @@ export class Room {
   private appendFailed = false
   private dirty = false
   private locked = false
+  private deleted = false
 
   private constructor(options: RoomOptions) {
     this.options = options
@@ -149,12 +151,14 @@ export class Room {
 
   // Runs under a lock because two instances creating the same Y.Text would produce two
   // competing types, and edits to the losing one would vanish.
+  // The file list is read inside the lock too: the API holds it while creating a file, and a
+  // list from before that commit would delete the new file's text as unknown.
   async reconcileTree(): Promise<void> {
-    const files = await this.storage.catalog.listFiles(this.projectId)
-    this.canonicalTree = new Map(
-      files.map((file) => [file.id, { path: file.path, kind: file.kind }]),
-    )
-    const done = await this.withLock(`tree:${this.projectId}`, async () => {
+    const done = await this.withLock(collabKeys.treeLock(this.projectId), async () => {
+      const files = await this.storage.catalog.listFiles(this.projectId)
+      this.canonicalTree = new Map(
+        files.map((file) => [file.id, { path: file.path, kind: file.kind }]),
+      )
       await this.catchUp()
       this.doc.transact(() => this.applyCanonicalTree(), SERVER_ORIGIN)
       await this.appends
@@ -289,6 +293,13 @@ export class Room {
         break
       case 'room.locked':
         this.setLocked(message.locked)
+        break
+      case 'room.deleted':
+        // The project row is gone, so a final compaction could never succeed.
+        this.deleted = true
+        for (const connection of this.connections) {
+          connection.close(WsCloseCode.forbidden, 'room deleted')
+        }
         break
       case 'tree.changed':
         if (message.projectId !== this.projectId) break
@@ -509,6 +520,7 @@ export class Room {
 
   private async runCompaction(): Promise<boolean> {
     await this.appends
+    if (this.deleted) return true
     const hadFailedAppends = this.appendFailed
     this.dirty = false
     const saved = await this.withLock(`compact:${this.projectId}`, async () => {

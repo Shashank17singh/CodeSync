@@ -1,11 +1,12 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { BUS_SENDER_ID_BYTES, collabKeys } from '@codesync/shared'
 import { Redis } from 'ioredis'
 import type { Bus, Locks, Slots, UpdateLog } from './types.js'
 
-const INSTANCE_ID_BYTES = 16
+const INSTANCE_ID_BYTES = BUS_SENDER_ID_BYTES
 
-const logKey = (projectId: string): string => `collab:${projectId}:updates`
-const slotsKey = (projectId: string): string => `collab:${projectId}:slots`
+const logKey = collabKeys.updates
+const slotsKey = collabKeys.slots
 
 const ACQUIRE_SLOT = `
 redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[3])
@@ -42,12 +43,12 @@ export class RedisLocks implements Locks {
 
   async acquire(name: string, ttlMs: number): Promise<string | null> {
     const token = randomUUID()
-    const result = await this.redis.set(`lock:${name}`, token, 'PX', ttlMs, 'NX')
+    const result = await this.redis.set(collabKeys.lock(name), token, 'PX', ttlMs, 'NX')
     return result === 'OK' ? token : null
   }
 
   async release(name: string, token: string): Promise<void> {
-    await this.redis.eval(RELEASE_LOCK, 1, `lock:${name}`, token)
+    await this.redis.eval(RELEASE_LOCK, 1, collabKeys.lock(name), token)
   }
 }
 

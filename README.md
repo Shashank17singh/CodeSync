@@ -2,8 +2,9 @@
 
 Real-time collaborative code editor with sandboxed execution, AI review and an online judge.
 
-Built so far: database schema, the collaboration server, and presence with live cursors. See
-[docs/architecture/collab.md](docs/architecture/collab.md).
+Built so far: database schema, the collaboration server, presence with live cursors, and the rooms
+and projects API. See [collab.md](docs/architecture/collab.md) and
+[rest-api.md](docs/architecture/rest-api.md).
 
 ## Setup
 
@@ -31,8 +32,15 @@ curl http://localhost:4000/healthz
 corepack pnpm --filter @codesync/collab test
 ```
 
-Tests use an in-memory stand-in for Redis and PostgreSQL. To also run the storage adapters against
-real services:
+API tests run against real PostgreSQL. They start an embedded server unless `TEST_DATABASE_URL`
+points at your own migrated database:
+
+```sh
+corepack pnpm --filter @codesync/api test
+```
+
+Collab tests use an in-memory stand-in for Redis and PostgreSQL. To also run the storage adapters
+against real services:
 
 ```sh
 TEST_REDIS_URL=redis://localhost:6379 \

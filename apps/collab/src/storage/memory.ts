@@ -157,8 +157,9 @@ class MemoryCatalog implements Catalog {
     return this.hub.access.get(userId) ?? null
   }
 
+  // A copy, because a database result does not change after it has been read.
   async listFiles(projectId: string): Promise<CatalogFile[]> {
-    return this.hub.files.get(projectId) ?? []
+    return [...(this.hub.files.get(projectId) ?? [])]
   }
 
   async recordClients(projectId: string, userId: string, clientIds: number[]): Promise<void> {

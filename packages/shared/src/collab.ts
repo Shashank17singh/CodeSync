@@ -80,9 +80,24 @@ export const roomControlSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('member.removed'), userId: z.uuid() }),
   z.object({ type: z.literal('room.locked'), locked: z.boolean() }),
+  z.object({ type: z.literal('room.deleted') }),
   z.object({ type: z.literal('tree.changed'), projectId: z.uuid() }),
 ])
 export type RoomControl = z.infer<typeof roomControlSchema>
+
+// Redis names shared by collab and the API, which both write to a project's document.
+export const collabKeys = {
+  updates: (projectId: string): string => `collab:${projectId}:updates`,
+  slots: (projectId: string): string => `collab:${projectId}:slots`,
+  sync: (projectId: string): string => `collab:${projectId}:sync`,
+  awareness: (projectId: string): string => `collab:${projectId}:awareness`,
+  control: (roomId: string): string => `room:${roomId}:control`,
+  lock: (name: string): string => `lock:${name}`,
+  treeLock: (projectId: string): string => `tree:${projectId}`,
+}
+
+// Every pub/sub payload starts with the sender's id, so a sender can skip its own messages.
+export const BUS_SENDER_ID_BYTES = 16
 
 export const appEnvelopeSchema = z.object({
   v: z.literal(1),

@@ -102,6 +102,27 @@ decorations and cursors as content widgets. Display names reach the DOM only thr
 Follow mode watches document transactions, not keystrokes. A local transaction is this user's own
 edit and stops following, while the followed user's text arrives as a non-local one.
 
+## How the API shares a project
+
+File content has no copy in PostgreSQL, so zip import, zip export and templates all go through the
+Y.Doc. `apps/api/src/collab/bridge.ts` follows the same rules as a collab instance.
+
+Creating a file holds the `tree:{projectId}` Redis lock around these steps:
+
+1. Write the content to the shared log as a Yjs update.
+2. Commit the `File` row.
+
+The lock prevents two ways of losing data. Two writers each creating a `Y.Text` for one file id
+would compete, and edits to the loser would vanish. A reconcile reading the file list before the
+commit would see text with no row and delete it, which is why `Room.reconcileTree` reads the list
+inside the lock. `treeLock.test.ts` and the matching test in `persistence.test.ts` force both
+orderings.
+
+After the lock is released, the API publishes `tree.changed` on `room:{roomId}:control`. Database
+changes are committed first, so a Redis failure does not fail the request. Collab re-reads roles
+on connect and the file list on the next room load, but a live socket would miss the change until
+it reconnects.
+
 ## Frontend tooling notes
 
 - Monaco renders nothing until a model is set, so an empty editor host is normal.

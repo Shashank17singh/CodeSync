@@ -1,6 +1,15 @@
+import { collabKeys } from '@codesync/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
-import { FILE_ID, PROJECT_ID, createHarness, fileText, waitFor, type Harness } from './helpers.js'
+import {
+  FILE_ID,
+  PROJECT_ID,
+  ROOM_ID,
+  createHarness,
+  fileText,
+  waitFor,
+  type Harness,
+} from './helpers.js'
 
 function storedText(harness: Harness): string {
   const stored = harness.hub.docs.get(PROJECT_ID)
@@ -133,6 +142,52 @@ describe('persistence', () => {
     await waitFor(() => fileText(session.doc) !== undefined)
     fileText(session.doc).insert(0, 'a')
     await waitFor(() => harness.hub.clients.get(`${PROJECT_ID}:${session.doc.clientID}`) === userId)
+  })
+
+  it('keeps a file the API creates while it holds the tree lock', async () => {
+    const server = await harness.start()
+    const session = await harness.connect(server, harness.user())
+    await waitFor(() => fileText(session.doc) !== undefined)
+    const room = await server.rooms.acquire(PROJECT_ID, ROOM_ID)
+    const storage = harness.hub.storage()
+    const id = '88888888-8888-4888-8888-888888888888'
+
+    // The API's order: lock, write the text, commit the file row, release.
+    const lock = collabKeys.treeLock(PROJECT_ID)
+    const token = (await storage.locks.acquire(lock, 5_000)) as string
+    const peer = new Y.Doc()
+    Y.applyUpdate(peer, Y.encodeStateAsUpdate(session.doc))
+    const before = Y.encodeStateVector(peer)
+    peer.getMap('files').set(id, new Y.Text('seeded'))
+    await storage.log.append(PROJECT_ID, Y.encodeStateAsUpdate(peer, before))
+
+    // A reconcile arriving now must wait. If it read the file list before the commit below, it
+    // would treat the new text as unknown and delete it.
+    const reconciled = room.reconcileTree()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    harness.hub.files.get(PROJECT_ID)?.push({ id, path: 'seeded.py', kind: 'FILE' })
+    await storage.locks.release(lock, token)
+    await reconciled
+
+    await waitFor(() => session.files.get(id)?.toString() === 'seeded')
+    expect(session.tree.get(id)?.path).toBe('seeded.py')
+    server.rooms.release(PROJECT_ID)
+  })
+
+  it('disconnects everyone and unloads without saving when the room is deleted', async () => {
+    const server = await harness.start()
+    const session = await harness.connect(server, harness.user())
+    await waitFor(() => fileText(session.doc) !== undefined)
+    fileText(session.doc).insert(0, 'about to be deleted')
+    await waitFor(() => pendingCount(harness) > 1)
+
+    const room = await server.rooms.acquire(PROJECT_ID, ROOM_ID)
+    room.applyControl({ type: 'room.deleted' })
+    server.rooms.release(PROJECT_ID)
+
+    await waitFor(() => !session.provider.wsconnected)
+    await waitFor(() => server.rooms.activeRooms === 0)
+    expect(harness.hub.docs.has(PROJECT_ID)).toBe(false)
   })
 
   it('adds a file created through the API to connected clients', async () => {

@@ -1,4 +1,4 @@
-import type { CollabRole, TreeEntry } from '@codesync/shared'
+import { collabKeys, type CollabRole, type TreeEntry } from '@codesync/shared'
 
 export interface StoredDoc {
   state: Uint8Array | null
@@ -60,7 +60,7 @@ export interface Storage {
 }
 
 export const channels = {
-  sync: (projectId: string): string => `collab:${projectId}:sync`,
-  awareness: (projectId: string): string => `collab:${projectId}:awareness`,
-  control: (roomId: string): string => `room:${roomId}:control`,
+  sync: collabKeys.sync,
+  awareness: collabKeys.awareness,
+  control: collabKeys.control,
 }
