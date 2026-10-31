@@ -14,6 +14,8 @@ export const COLLAB_LIMITS = {
   messageBurst: 120,
   bytesPerSecond: 4 * 1024 * 1024,
   byteBurst: 16 * 1024 * 1024,
+  awarenessPerSecond: 25,
+  awarenessBurst: 40,
 } as const
 
 export const COMPACTION = {

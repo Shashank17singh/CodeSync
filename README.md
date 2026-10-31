@@ -2,7 +2,7 @@
 
 Real-time collaborative code editor with sandboxed execution, AI review and an online judge.
 
-Built so far: database schema and the collaboration server. See
+Built so far: database schema, the collaboration server, and presence with live cursors. See
 [docs/architecture/collab.md](docs/architecture/collab.md).
 
 ## Setup
@@ -38,6 +38,15 @@ real services:
 TEST_REDIS_URL=redis://localhost:6379 \
 TEST_DATABASE_URL=postgresql://codesync:codesync@localhost:5432/codesync \
   corepack pnpm --filter @codesync/collab test
+```
+
+Browser tests run two isolated users against a real collab server. Playwright starts both servers
+itself:
+
+```sh
+corepack pnpm build
+corepack pnpm --filter @codesync/web exec playwright install chromium
+corepack pnpm --filter @codesync/web test:e2e
 ```
 
 Keep `prisma` pinned to 7.10.1. npm's `latest` tag currently points to an 8.0 release candidate.

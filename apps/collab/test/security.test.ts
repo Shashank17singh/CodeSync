@@ -372,8 +372,6 @@ describe('awareness', () => {
     const second = await harness.start()
     const stays = await harness.connect(server, harness.user())
     const leaves = await harness.connect(second, harness.user())
-    // y-protocols ignores a peer's untouched initial state, so presence starts at the first set.
-    leaves.provider.awareness.setLocalStateField('status', 'active')
     await waitFor(() => stays.provider.awareness.getStates().has(leaves.doc.clientID))
     leaves.provider.disconnect()
     await waitFor(() => !stays.provider.awareness.getStates().has(leaves.doc.clientID))
@@ -392,8 +390,6 @@ describe('awareness', () => {
 
   it('ignores an update for a client id owned by another connection', async () => {
     const victim = await harness.connect(server, harness.user())
-    victim.provider.awareness.setLocalState({ cursor: 1 })
-    await waitFor(() => victim.provider.awareness.getStates().size >= 1)
     await new Promise((resolve) => setTimeout(resolve, 50))
 
     const attacker = rawClient(server, harness.token(harness.user()))
@@ -402,7 +398,7 @@ describe('awareness', () => {
     forged.clientID = victim.doc.clientID
     const awareness = new awarenessProtocol.Awareness(forged)
     awareness.setLocalState(null)
-    for (let index = 0; index < 5; index++) awareness.setLocalState({ cursor: 666 })
+    for (let index = 0; index < 5; index++) awareness.setLocalState({ status: 'away' })
     attacker.ws.send(
       awarenessFrame(awarenessProtocol.encodeAwarenessUpdate(awareness, [forged.clientID])),
     )
@@ -411,7 +407,7 @@ describe('awareness', () => {
     forged.destroy()
 
     const room = await server.rooms.acquire(PROJECT_ID, ROOM_ID)
-    expect(room.awareness.getStates().get(victim.doc.clientID)?.['cursor']).toBe(1)
+    expect(room.awareness.getStates().get(victim.doc.clientID)?.['status']).toBe('active')
     server.rooms.release(PROJECT_ID)
     attacker.ws.close()
   })
@@ -420,7 +416,7 @@ describe('awareness', () => {
     const session = await harness.connect(server, harness.user())
     const before = session.provider.wsLastMessageReceived
     await new Promise((resolve) => setTimeout(resolve, 20))
-    session.provider.awareness.setLocalStateField('cursor', 1)
+    session.provider.awareness.setLocalStateField('status', 'idle')
     await waitFor(() => session.provider.wsLastMessageReceived > before)
   })
 })

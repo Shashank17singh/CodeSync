@@ -4,7 +4,11 @@ import {
   WsMessageType,
   YDOC_ROOTS,
   appEnvelopeSchema,
+  clientPresenceSchema,
+  colorForUser,
+  initialsFor,
   roomControlSchema,
+  type PresenceState,
   type RoomControl,
   type TreeEntry,
 } from '@codesync/shared'
@@ -414,15 +418,12 @@ export class Room {
   }
 
   private handleAwareness(connection: Connection, decoder: decoding.Decoder): void {
-    const accepted = decodeAwarenessUpdate(decoding.readVarUint8Array(decoder)).flatMap((entry) => {
+    const entries = decodeAwarenessUpdate(decoding.readVarUint8Array(decoder))
+    // Every state fans out to the whole room, so excess updates are dropped, not disconnected.
+    if (!connection.awarenessBucket.take()) return
+    const accepted = entries.flatMap((entry) => {
       if (!this.claimAwarenessClient(connection, entry.clientId)) return []
-      // Identity comes from the verified token, never from the client.
-      const state = entry.state && {
-        ...entry.state,
-        userId: connection.userId,
-        name: connection.name,
-      }
-      return [{ ...entry, state }]
+      return [{ ...entry, state: entry.state && this.serverPresence(connection, entry.state) }]
     })
     if (accepted.length === 0) return
     awarenessProtocol.applyAwarenessUpdate(
@@ -432,14 +433,33 @@ export class Room {
     )
   }
 
+  // Identity comes from the verified token, never from the client.
+  private serverPresence(connection: Connection, state: unknown): PresenceState {
+    const parsed = clientPresenceSchema.safeParse(state)
+    if (!parsed.success) throw new ProtocolError(WsCloseCode.malformed, 'invalid presence state')
+    return {
+      ...parsed.data,
+      userId: connection.userId,
+      name: connection.name,
+      initials: initialsFor(connection.name),
+      color: colorForUser(connection.userId),
+    }
+  }
+
   private claimAwarenessClient(connection: Connection, clientId: number): boolean {
     const owner = this.awarenessOwners.get(clientId)
-    if (owner) return owner === connection
-    // A state with no local owner belongs to a user on another instance.
-    if (this.awareness.getStates().has(clientId)) return false
+    if (owner === connection) return true
+    // A reconnecting user takes over from a socket the server has not seen die yet.
+    if (owner && owner.userId !== connection.userId) return false
+    if (!owner) {
+      // A state with no local owner belongs to a user on another instance.
+      const state = this.awareness.getStates().get(clientId)
+      if (state && state['userId'] !== connection.userId) return false
+    }
     if (connection.awarenessClients.size >= COLLAB_LIMITS.maxAwarenessClientsPerConnection) {
       return false
     }
+    owner?.awarenessClients.delete(clientId)
     connection.awarenessClients.add(clientId)
     this.awarenessOwners.set(clientId, connection)
     return true

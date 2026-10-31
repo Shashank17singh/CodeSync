@@ -13,5 +13,7 @@ export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
     testTimeout: 20_000,
+    // Parallel workers abort on 8 GB machines that have other apps open.
+    fileParallelism: false,
   },
 })

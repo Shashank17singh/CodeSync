@@ -3,3 +3,5 @@ dist/
 coverage/
 .env
 packages/db/src/generated/
+test-results/
+playwright-report/

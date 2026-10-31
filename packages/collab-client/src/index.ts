@@ -2,6 +2,9 @@ import { WsCloseCode, YDOC_ROOTS, type TreeEntry } from '@codesync/shared'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
+import { PresenceTracker } from './presence.js'
+
+export * from './presence.js'
 
 export interface CollabSessionOptions {
   serverUrl: string
@@ -19,6 +22,7 @@ export interface CollabSessionOptions {
 export interface CollabSession {
   doc: Y.Doc
   provider: WebsocketProvider
+  presence: PresenceTracker
   files: Y.Map<Y.Text>
   tree: Y.Map<TreeEntry>
   destroy: () => Promise<void>
@@ -34,6 +38,13 @@ export async function createCollabSession(options: CollabSessionOptions): Promis
     params: { token: await options.getToken() },
     ...(options.webSocket ? { WebSocketPolyfill: options.webSocket } : {}),
     disableBc: options.disableBroadcastChannel ?? false,
+  })
+
+  const presence = new PresenceTracker(provider.awareness)
+  presence.start()
+
+  provider.on('status', ({ status }) => {
+    if (status === 'connected') presence.announce()
   })
 
   provider.on('connection-close', (event) => {
@@ -56,9 +67,11 @@ export async function createCollabSession(options: CollabSessionOptions): Promis
   return {
     doc,
     provider,
+    presence,
     files: doc.getMap(YDOC_ROOTS.files),
     tree: doc.getMap(YDOC_ROOTS.tree),
     destroy: async () => {
+      presence.destroy()
       provider.destroy()
       await offline?.destroy()
       doc.destroy()

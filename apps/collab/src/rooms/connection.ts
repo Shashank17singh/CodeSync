@@ -9,6 +9,10 @@ export class Connection {
     COLLAB_LIMITS.messageBurst,
   )
   readonly byteBucket = new TokenBucket(COLLAB_LIMITS.bytesPerSecond, COLLAB_LIMITS.byteBurst)
+  readonly awarenessBucket = new TokenBucket(
+    COLLAB_LIMITS.awarenessPerSecond,
+    COLLAB_LIMITS.awarenessBurst,
+  )
   readonly awarenessClients = new Set<number>()
   readonly yjsClients = new Set<number>()
   deniedWrites = 0

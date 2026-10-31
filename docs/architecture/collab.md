@@ -26,7 +26,7 @@ cannot reject an edit before applying it. The second cost shapes the security mo
 One `Y.Doc` per project:
 
 | Root | Type | Written by | Content |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `files` | `Y.Map<Y.Text>` | Server creates entries, editors edit text | File content keyed by `File.id` |
 | `tree` | `Y.Map<{ path, kind }>` | Server only | Mirror of `File` rows |
 
@@ -59,6 +59,8 @@ One `Y.Doc` per project:
 
 ## Known limitations
 
+- A client that sends more than 60 messages per second is disconnected permanently. Human typing,
+  including key repeat, stays well below this, but scripted typing does not.
 - A hostile tree write reaches other clients briefly before the repair. Clients must treat tree
   paths as display data and never as filesystem paths.
 - Deleting a file through the `files` map recreates it empty. This gives an editor no more power
@@ -71,8 +73,39 @@ One `Y.Doc` per project:
 - The `app` message channel answers every event with `unsupported_event` until chat (3.9) and
   execution streaming (3.5) are built.
 
-## Presence note for 3.2
+## Presence
 
-y-protocols ignores a client's untouched initial awareness state because its clock is 0. A client
-is invisible to others until it first sets a field, so the client must set its presence state
-immediately after connecting.
+Code: `packages/shared/src/presence.ts`, `packages/collab-client/src/presence.ts`,
+`apps/web/src/features/presence`.
+
+Each user's awareness state holds `fileId`, `cursor`, and `status`, which the client sets, plus
+`userId`, `name`, `initials`, and `color`, which the server stamps from the verified token. The
+color is a hash of the user id into a fixed palette, so it is the same everywhere without being
+stored. Two users can share a color, which is why cursors also carry a name.
+
+Cursors are Yjs relative positions, so a cursor stays on the same character while others type
+above it.
+
+| Rule | Where | Why |
+| --- | --- | --- |
+| Set presence as soon as a session starts | Client | y-protocols ignores an untouched initial state, whose clock is 0 |
+| Re-announce on every reconnect | Client | A resent clock would be ignored by a server that already saw it |
+| A user can reclaim their own client id | Server | The old socket may not have been seen to die yet |
+| At most 20 cursor updates per second, newest wins | Client | Each update fans out to the whole room |
+| At most 25 presence updates per second, burst 40 | Server | Same fan-out, enforced against hostile clients; excess is dropped |
+
+y-monaco's cursor rendering is turned off by passing `null` for awareness. It has no concept of a
+peer's current file and cannot show name labels or fade them. `CollabEditor` draws selections as
+decorations and cursors as content widgets. Display names reach the DOM only through
+`textContent`, and colors reach CSS only through classes generated from the fixed palette.
+
+Follow mode watches document transactions, not keystrokes. A local transaction is this user's own
+edit and stops following, while the followed user's text arrives as a non-local one.
+
+## Frontend tooling notes
+
+- Monaco renders nothing until a model is set, so an empty editor host is normal.
+- `monaco-editor` 0.57 removed `esm/vs/...` from its package exports. y-monaco still imports that
+  path, so `apps/web/vite.config.ts` aliases it.
+- Monaco is excluded from Vite's dependency pre-bundling, which ran out of memory on an 8 GB
+  machine. Production bundling has not been tried and needs attention in 3.11.
