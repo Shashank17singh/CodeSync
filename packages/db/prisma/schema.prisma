@@ -1,0 +1,548 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GlobalRole {
+  USER
+  FACULTY
+  ADMIN
+}
+
+enum OAuthProvider {
+  GITHUB
+  GOOGLE
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum RoomTemplate {
+  PYTHON
+  CPP
+  JAVA
+  JAVASCRIPT
+  BLANK
+}
+
+// OWNER is derived from Room.ownerId, so a room can never have two owners.
+enum MemberRole {
+  EDITOR
+  VIEWER
+}
+
+enum FileKind {
+  FILE
+  DIRECTORY
+}
+
+enum Language {
+  PYTHON
+  CPP
+  JAVA
+  JAVASCRIPT
+}
+
+enum SnapshotKind {
+  AUTO
+  RUN
+  MANUAL
+}
+
+enum ExecutionStatus {
+  QUEUED
+  RUNNING
+  OK
+  COMPILE_ERROR
+  RUNTIME_ERROR
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  OUTPUT_LIMIT_EXCEEDED
+  INTERNAL_ERROR
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum CheckerKind {
+  EXACT
+  WHITESPACE
+  CUSTOM
+}
+
+enum Verdict {
+  PENDING
+  JUDGING
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  RUNTIME_ERROR
+  COMPILE_ERROR
+  INTERNAL_ERROR
+}
+
+enum ReviewMode {
+  REVIEW
+  EXPLAIN
+  WHY_FAILING
+}
+
+enum NotificationKind {
+  MENTION
+  COMMENT_REPLY
+  ROOM_INVITE
+}
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @unique
+  emailVerifiedAt DateTime?
+  passwordHash    String?
+  displayName     String     @db.VarChar(80)
+  avatarUrl       String?
+  role            GlobalRole @default(USER)
+  theme           String     @default("system") @db.VarChar(16)
+  editorSettings  Json       @default("{\"fontSize\":14,\"tabSize\":4,\"keybindings\":\"default\"}")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  oauthAccounts    OAuthAccount[]
+  authTokens       AuthToken[]
+  refreshTokens    RefreshToken[]
+  ownedRooms       Room[]         @relation("RoomOwner")
+  memberships      RoomMember[]
+  invitesCreated   Invite[]
+  snapshotsCreated Snapshot[]
+  yjsClients       YjsClient[]
+  chatMessages     ChatMessage[]  @relation("ChatAuthor")
+  chatDeletions    ChatMessage[]  @relation("ChatDeleter")
+  notifications    Notification[]
+  comments         Comment[]      @relation("CommentAuthor")
+  commentsResolved Comment[]      @relation("CommentResolver")
+  executions       Execution[]
+  problemsCreated  Problem[]
+  problemSets      ProblemSet[]
+  submissions      Submission[]
+  reviews          Review[]
+}
+
+model OAuthAccount {
+  id                String        @id @default(uuid()) @db.Uuid
+  userId            String        @db.Uuid
+  provider          OAuthProvider
+  providerAccountId String
+  createdAt         DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model AuthToken {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  familyId     String    @db.Uuid
+  tokenHash    String    @unique
+  replacedById String?   @unique @db.Uuid
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  userAgent    String?   @db.VarChar(256)
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy RefreshToken? @relation("Rotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces   RefreshToken? @relation("Rotation")
+
+  @@index([familyId])
+  @@index([userId])
+}
+
+model Room {
+  id              String       @id @default(uuid()) @db.Uuid
+  name            String       @db.VarChar(120)
+  visibility      Visibility   @default(PRIVATE)
+  template        RoomTemplate @default(BLANK)
+  ownerId         String       @db.Uuid
+  lockedAt        DateTime?
+  profanityFilter Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  owner        User          @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members      RoomMember[]
+  invites      Invite[]
+  projects     Project[]
+  chatMessages ChatMessage[]
+  executions   Execution[]
+  contests     Contest[]
+  reviews      Review[]
+
+  @@index([ownerId])
+}
+
+model RoomMember {
+  roomId     String     @db.Uuid
+  userId     String     @db.Uuid
+  role       MemberRole @default(VIEWER)
+  lastReadAt DateTime   @default(now())
+  joinedAt   DateTime   @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, userId])
+  @@index([userId])
+}
+
+model Invite {
+  id          String     @id @default(uuid()) @db.Uuid
+  roomId      String     @db.Uuid
+  role        MemberRole
+  tokenHash   String     @unique
+  email       String?
+  expiresAt   DateTime?
+  maxUses     Int?
+  uses        Int        @default(0)
+  revokedAt   DateTime?
+  createdById String     @db.Uuid
+  createdAt   DateTime   @default(now())
+
+  room      Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+}
+
+// ydocState is the compacted Y.Doc. Updates newer than ydocVersion live in Redis.
+model Project {
+  id          String    @id @default(uuid()) @db.Uuid
+  roomId      String    @db.Uuid
+  name        String    @db.VarChar(120)
+  ydocState   Bytes?
+  ydocVersion Int       @default(0)
+  compactedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  room       Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  files      File[]
+  snapshots  Snapshot[]
+  yjsClients YjsClient[]
+  executions Execution[]
+  reviews    Review[]
+
+  @@unique([roomId, name])
+}
+
+// Metadata only. File content is a Y.Text inside Project.ydocState; File.id is its Y.Map key.
+model File {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @db.Uuid
+  path      String   @db.VarChar(1024)
+  kind      FileKind @default(FILE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  reviews  Review[]
+
+  @@unique([projectId, path])
+}
+
+model Snapshot {
+  id          String       @id @default(uuid()) @db.Uuid
+  projectId   String       @db.Uuid
+  kind        SnapshotKind
+  label       String?      @db.VarChar(120)
+  state       Bytes
+  authorIds   String[]     @db.Uuid
+  createdById String?      @db.Uuid
+  createdAt   DateTime     @default(now())
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([kind, createdAt])
+}
+
+// Maps Yjs client ids to users for blame. BigInt: a Yjs clientID is an unsigned 32-bit value.
+model YjsClient {
+  projectId   String   @db.Uuid
+  clientId    BigInt
+  userId      String   @db.Uuid
+  firstSeenAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, clientId])
+}
+
+model ChatMessage {
+  id               String    @id @default(uuid()) @db.Uuid
+  roomId           String    @db.Uuid
+  authorId         String    @db.Uuid
+  body             String    @db.VarChar(4000)
+  mentionedUserIds String[]  @db.Uuid
+  createdAt        DateTime  @default(now())
+  deletedAt        DateTime?
+  deletedById      String?   @db.Uuid
+
+  room          Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  author        User           @relation("ChatAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  deletedBy     User?          @relation("ChatDeleter", fields: [deletedById], references: [id], onDelete: SetNull)
+  notifications Notification[]
+
+  @@index([roomId, createdAt(sort: Desc), id])
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  kind      NotificationKind
+  messageId String?          @db.Uuid
+  commentId String?          @db.Uuid
+  payload   Json             @default("{}")
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message ChatMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  comment Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+}
+
+// A thread root has a null parentId and encoded Y.RelativePosition anchors; replies have neither.
+model Comment {
+  id           String    @id @default(uuid()) @db.Uuid
+  fileId       String    @db.Uuid
+  authorId     String    @db.Uuid
+  parentId     String?   @db.Uuid
+  anchorStart  Bytes?
+  anchorEnd    Bytes?
+  body         String    @db.VarChar(4000)
+  resolvedAt   DateTime?
+  resolvedById String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  file          File           @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  author        User           @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  resolvedBy    User?          @relation("CommentResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  parent        Comment?       @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]      @relation("Thread")
+  notifications Notification[]
+
+  @@index([fileId, parentId])
+  @@index([parentId])
+}
+
+model Execution {
+  id         String          @id @default(uuid()) @db.Uuid
+  roomId     String          @db.Uuid
+  projectId  String          @db.Uuid
+  userId     String          @db.Uuid
+  language   Language
+  entryPath  String          @db.VarChar(1024)
+  stdin      String?
+  status     ExecutionStatus @default(QUEUED)
+  stdout     String?
+  stderr     String?
+  exitCode   Int?
+  timeMs     Int?
+  memoryKb   Int?
+  workerId   String?         @db.VarChar(120)
+  attempts   Int             @default(0)
+  queuedAt   DateTime        @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  room    Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, queuedAt(sort: Desc)])
+  @@index([userId, queuedAt(sort: Desc)])
+}
+
+// limits: { "PYTHON": { "timeMs": 5000, "memoryMb": 256 }, ... }; starterCode: { "PYTHON": "...", ... }
+model Problem {
+  id                 String      @id @default(uuid()) @db.Uuid
+  slug               String      @unique @db.VarChar(120)
+  title              String      @db.VarChar(200)
+  difficulty         Difficulty
+  tags               String[]
+  statementMd        String
+  inputFormat        String
+  outputFormat       String
+  constraints        String
+  limits             Json
+  starterCode        Json
+  checkerKind        CheckerKind @default(EXACT)
+  checkerSource      String?
+  checkerLanguage    Language?
+  referenceSolution  String?
+  referenceLanguage  Language?
+  stopOnFirstFailure Boolean     @default(true)
+  publishedAt        DateTime?
+  createdById        String      @db.Uuid
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  createdBy   User              @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  testCases   TestCase[]
+  submissions Submission[]
+  sets        ProblemSet[]
+  plagiarism  PlagiarismMatch[]
+  reviews     Review[]
+
+  @@index([difficulty])
+  @@index([tags], type: Gin)
+}
+
+// Bytes, not String: a text column rejects NUL and test data must round-trip exactly.
+model TestCase {
+  id        String  @id @default(uuid()) @db.Uuid
+  problemId String  @db.Uuid
+  ordinal   Int
+  input     Bytes
+  output    Bytes
+  isSample  Boolean @default(false)
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, ordinal])
+}
+
+model ProblemSet {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String   @db.VarChar(200)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  problems  Problem[]
+  contests  Contest[]
+}
+
+model Contest {
+  id            String   @id @default(uuid()) @db.Uuid
+  roomId        String   @db.Uuid
+  problemSetId  String   @db.Uuid
+  title         String   @db.VarChar(200)
+  startsAt      DateTime
+  endsAt        DateTime
+  freezeMinutes Int      @default(15)
+  createdAt     DateTime @default(now())
+
+  room        Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  problemSet  ProblemSet   @relation(fields: [problemSetId], references: [id], onDelete: Restrict)
+  submissions Submission[]
+
+  @@index([roomId, startsAt])
+}
+
+model Submission {
+  id            String    @id @default(uuid()) @db.Uuid
+  problemId     String    @db.Uuid
+  userId        String    @db.Uuid
+  contestId     String?   @db.Uuid
+  language      Language
+  source        String
+  verdict       Verdict   @default(PENDING)
+  failedOrdinal Int?
+  timeMs        Int?
+  memoryKb      Int?
+  compileOutput String?
+  results       Json      @default("[]")
+  createdAt     DateTime  @default(now())
+  judgedAt      DateTime?
+
+  problem  Problem           @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contest  Contest?          @relation(fields: [contestId], references: [id], onDelete: SetNull)
+  matchesA PlagiarismMatch[] @relation("MatchA")
+  matchesB PlagiarismMatch[] @relation("MatchB")
+
+  @@index([problemId, userId, createdAt(sort: Desc)])
+  @@index([contestId, createdAt])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+// Stored with submissionAId < submissionBId so each pair exists once.
+model PlagiarismMatch {
+  id            String   @id @default(uuid()) @db.Uuid
+  problemId     String   @db.Uuid
+  submissionAId String   @db.Uuid
+  submissionBId String   @db.Uuid
+  similarity    Float
+  createdAt     DateTime @default(now())
+
+  problem     Problem    @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  submissionA Submission @relation("MatchA", fields: [submissionAId], references: [id], onDelete: Cascade)
+  submissionB Submission @relation("MatchB", fields: [submissionBId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionAId, submissionBId])
+  @@index([problemId, similarity(sort: Desc)])
+}
+
+// problemId is set in practice mode, which restricts output to hints and is part of the cache key.
+model Review {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @db.Uuid
+  roomId      String?    @db.Uuid
+  projectId   String?    @db.Uuid
+  fileId      String?    @db.Uuid
+  problemId   String?    @db.Uuid
+  mode        ReviewMode
+  language    Language
+  contentHash String     @db.Char(64)
+  lineStart   Int?
+  lineEnd     Int?
+  findings    Json
+  complexity  Json?
+  model       String     @db.VarChar(120)
+  createdAt   DateTime   @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room    Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  file    File?    @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  problem Problem? @relation(fields: [problemId], references: [id], onDelete: SetNull)
+
+  @@index([contentHash, mode, language])
+  @@index([userId, createdAt(sort: Desc)])
+}

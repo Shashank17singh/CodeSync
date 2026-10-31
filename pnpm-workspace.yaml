@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+minimumReleaseAgeExclude:
+  - ws@8.22.1
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true

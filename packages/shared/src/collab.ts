@@ -1,0 +1,91 @@
+import { z } from 'zod'
+
+export const COLLAB_LIMITS = {
+  maxUsersPerRoom: 50,
+  maxFileChars: 2 * 1024 * 1024,
+  maxFrameBytes: 4 * 1024 * 1024,
+  maxAwarenessStateBytes: 4 * 1024,
+  maxAwarenessClientsPerConnection: 4,
+  maxYjsClientsPerConnection: 64,
+  maxPendingUpdateBytes: 1024 * 1024,
+  maxBufferedBytes: 16 * 1024 * 1024,
+  maxDeniedWrites: 3,
+  messagesPerSecond: 60,
+  messageBurst: 120,
+  bytesPerSecond: 4 * 1024 * 1024,
+  byteBurst: 16 * 1024 * 1024,
+} as const
+
+export const COMPACTION = {
+  intervalMs: 30_000,
+  maxPendingUpdates: 500,
+} as const
+
+// Types 0-3 belong to y-websocket. Type 4 is the CodeSync application channel.
+export const WsMessageType = {
+  sync: 0,
+  awareness: 1,
+  auth: 2,
+  queryAwareness: 3,
+  app: 4,
+} as const
+
+// y-websocket stops reconnecting on 4400-4499, so only permanent failures use that range.
+export const WsCloseCode = {
+  tokenExpired: 4001,
+  serverDraining: 4002,
+  malformed: 4400,
+  invalidToken: 4401,
+  forbidden: 4403,
+  roomFull: 4409,
+  frameTooLarge: 4413,
+  rateLimited: 4429,
+} as const
+
+export const YDOC_ROOTS = {
+  files: 'files',
+  tree: 'tree',
+} as const
+
+export const collabRoleSchema = z.enum(['owner', 'editor', 'viewer'])
+export type CollabRole = z.infer<typeof collabRoleSchema>
+
+export const collabTokenClaimsSchema = z.object({
+  sub: z.uuid(),
+  name: z.string().min(1).max(80),
+  roomId: z.uuid(),
+  projectId: z.uuid(),
+  role: collabRoleSchema,
+})
+export type CollabTokenClaims = z.infer<typeof collabTokenClaimsSchema>
+
+export const COLLAB_TOKEN_AUDIENCE = 'collab'
+export const COLLAB_TOKEN_TTL_SECONDS = 300
+
+export const treeEntrySchema = z.object({
+  path: z.string().min(1).max(1024),
+  kind: z.enum(['FILE', 'DIRECTORY']),
+})
+export type TreeEntry = z.infer<typeof treeEntrySchema>
+
+// Published on room:{roomId}:control by the API. Tree changes carry no data:
+// File rows are canonical, so collab re-reads them.
+export const roomControlSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('role.changed'),
+    userId: z.uuid(),
+    role: collabRoleSchema,
+  }),
+  z.object({ type: z.literal('member.removed'), userId: z.uuid() }),
+  z.object({ type: z.literal('room.locked'), locked: z.boolean() }),
+  z.object({ type: z.literal('tree.changed'), projectId: z.uuid() }),
+])
+export type RoomControl = z.infer<typeof roomControlSchema>
+
+export const appEnvelopeSchema = z.object({
+  v: z.literal(1),
+  t: z.string().min(1).max(64),
+  id: z.string().max(64).optional(),
+  d: z.unknown().optional(),
+})
+export type AppEnvelope = z.infer<typeof appEnvelopeSchema>
