@@ -30,6 +30,9 @@ curl http://localhost:3000/healthz
 curl http://localhost:4000/healthz
 ```
 
+`dev` loads each app's `.env` file. In production, set real environment variables and run
+`node dist/index.js`.
+
 Development email goes to Mailpit. Read it at <http://localhost:8025>.
 
 ## Testing

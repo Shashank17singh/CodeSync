@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
+import { Writable } from 'node:stream'
 import jwt from 'jsonwebtoken'
+import pino from 'pino'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { hashPassword } from '../src/modules/auth/passwords.js'
 import {
@@ -301,6 +303,35 @@ describe('OAuth login', () => {
       const response = await callback({ code: 'code', state: 'wrong' }, cookie)
       expect(response.cookies.find((item) => item.name === REFRESH_COOKIE)).toBeUndefined()
     })
+  })
+})
+
+describe('logging', () => {
+  it('keeps OAuth codes and state out of the logs at any level', async () => {
+    let logged = ''
+    const sink = new Writable({
+      write(chunk, _encoding, done) {
+        logged += String(chunk)
+        done()
+      },
+    })
+    const provider = new FakeProvider()
+    const api = await createTestApi(undefined, {
+      oauth: { github: provider },
+      logger: pino({ level: 'trace' }, sink),
+    })
+    const start = await api.app.inject({ method: 'GET', url: '/api/v1/auth/oauth/github' })
+    const state = new URL(start.headers.location as string).searchParams.get('state') as string
+    await api.app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/oauth/github/callback',
+      query: { code: 'secret-provider-code', state },
+      cookies: { codesync_oauth: start.cookies[0]?.value as string },
+    })
+    await api.close()
+    expect(provider.exchanges).toHaveLength(1)
+    expect(logged).not.toContain('secret-provider-code')
+    expect(logged).not.toContain(state)
   })
 })
 

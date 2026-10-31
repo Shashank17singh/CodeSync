@@ -1,6 +1,6 @@
 import cookie from '@fastify/cookie'
 import type { PrismaClient } from '@codesync/db'
-import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify'
+import Fastify, { LogController, type FastifyBaseLogger, type FastifyInstance } from 'fastify'
 import jwt from 'jsonwebtoken'
 import { z, ZodError } from 'zod'
 import type { CollabBridge } from './collab/bridge.js'
@@ -64,7 +64,7 @@ export function buildApp(services: AppServices): FastifyInstance {
   const app = Fastify({
     loggerInstance: services.logger,
     // Tokens must stay out of request logs: OAuth callbacks carry codes in the query string.
-    disableRequestLogging: true,
+    logController: new LogController({ disableRequestLogging: true }),
     bodyLimit: 1024 * 1024,
     // A hop count, not `true`: trusting every proxy lets a client choose its own IP address.
     trustProxy: (_address, hop) => hop < services.config.trustProxyHops,

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { createPrismaClient, type PrismaClient } from '@codesync/db'
-import type { FastifyInstance, InjectOptions } from 'fastify'
+import type { FastifyBaseLogger, FastifyInstance, InjectOptions } from 'fastify'
 import jwt from 'jsonwebtoken'
 import pino from 'pino'
 import { buildApp } from '../src/app.js'
@@ -94,6 +94,7 @@ export interface TestApiOptions {
   oauth?: OAuthProviders
   limiter?: RateLimiter
   trustProxyHops?: number
+  logger?: FastifyBaseLogger
 }
 
 export async function createTestApi(
@@ -101,7 +102,7 @@ export async function createTestApi(
   options: TestApiOptions = {},
 ): Promise<TestApi> {
   const prisma = createPrismaClient(process.env['TEST_DATABASE_URL'] as string)
-  const logger = pino({ level: 'silent' })
+  const logger = options.logger ?? pino({ level: 'silent' })
   const mailer = new RecordingMailer()
   const limiter = options.limiter ?? new MemoryRateLimiter()
   const app = buildApp({
