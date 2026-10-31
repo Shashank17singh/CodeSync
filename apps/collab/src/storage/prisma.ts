@@ -1,5 +1,15 @@
 import type { PrismaClient } from '@codesync/db'
-import type { Catalog, CatalogFile, DocStore, RoomAccess, StoredDoc } from './types.js'
+import { maskProfanity } from '@codesync/shared'
+import type {
+  Catalog,
+  CatalogFile,
+  ChatPost,
+  ChatStore,
+  DocStore,
+  RoomAccess,
+  StoredChatMessage,
+  StoredDoc,
+} from './types.js'
 
 export class PrismaDocStore implements DocStore {
   constructor(private readonly prisma: PrismaClient) {}
@@ -22,6 +32,42 @@ export class PrismaDocStore implements DocStore {
       },
     })
     return result.count === 1
+  }
+}
+
+export class PrismaChat implements ChatStore {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async post({ roomId, authorId, body, mentions }: ChatPost): Promise<StoredChatMessage> {
+    return this.prisma.$transaction(async (tx) => {
+      const room = await tx.room.findUniqueOrThrow({
+        where: { id: roomId },
+        select: { profanityFilter: true },
+      })
+      const members = await tx.roomMember.findMany({
+        where: { roomId, userId: { in: mentions, not: authorId } },
+        select: { userId: true },
+      })
+      const mentionedUserIds = members.map((member) => member.userId)
+      const message = await tx.chatMessage.create({
+        data: {
+          roomId,
+          authorId,
+          body: room.profanityFilter ? maskProfanity(body) : body,
+          mentionedUserIds,
+        },
+        select: { id: true, body: true, createdAt: true },
+      })
+      const notifications = await Promise.all(
+        mentionedUserIds.map((userId) =>
+          tx.notification.create({
+            data: { userId, kind: 'MENTION', messageId: message.id, payload: { roomId } },
+            select: { id: true, userId: true },
+          }),
+        ),
+      )
+      return { ...message, mentionedUserIds, notifications }
+    })
   }
 }
 

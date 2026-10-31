@@ -2,8 +2,11 @@ import { WsCloseCode, YDOC_ROOTS, type TreeEntry } from '@codesync/shared'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
+import { AppChannel } from './channel.js'
 import { PresenceTracker } from './presence.js'
 
+export * from './channel.js'
+export * from './comments.js'
 export * from './presence.js'
 export * from './reviewFix.js'
 
@@ -24,6 +27,7 @@ export interface CollabSession {
   doc: Y.Doc
   provider: WebsocketProvider
   presence: PresenceTracker
+  channel: AppChannel
   files: Y.Map<Y.Text>
   tree: Y.Map<TreeEntry>
   destroy: () => Promise<void>
@@ -41,6 +45,7 @@ export async function createCollabSession(options: CollabSessionOptions): Promis
     disableBc: options.disableBroadcastChannel ?? false,
   })
 
+  const channel = new AppChannel(provider)
   const presence = new PresenceTracker(provider.awareness)
   presence.start()
 
@@ -69,6 +74,7 @@ export async function createCollabSession(options: CollabSessionOptions): Promis
     doc,
     provider,
     presence,
+    channel,
     files: doc.getMap(YDOC_ROOTS.files),
     tree: doc.getMap(YDOC_ROOTS.tree),
     destroy: async () => {

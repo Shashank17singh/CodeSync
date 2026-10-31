@@ -7,10 +7,13 @@ import {
   clientPresenceSchema,
   collabKeys,
   colorForUser,
-  executionEventSchema,
+  chatSendSchema,
+  chatTypingSchema,
+  roomEventSchema,
   initialsFor,
   roomControlSchema,
   type PresenceState,
+  type RoomEvent,
   type RoomControl,
   type TreeEntry,
 } from '@codesync/shared'
@@ -113,7 +116,7 @@ export class Room {
         awarenessProtocol.applyAwarenessUpdate(this.awareness, update, REMOTE_ORIGIN)
       }),
       bus.subscribe(channels.control(this.roomId), (payload) => this.onControl(payload)),
-      bus.subscribe(channels.events(this.roomId), (payload) => this.onExecutionEvent(payload)),
+      bus.subscribe(channels.events(this.roomId), (payload) => this.onRoomEvent(payload)),
     ])
   }
 
@@ -274,21 +277,38 @@ export class Room {
     this.applyControl(message)
   }
 
-  // Comes from a worker that has just handled hostile code, so it is checked like any input.
-  private onExecutionEvent(payload: Uint8Array): void {
+  // Can come from a worker that has just handled hostile code, so it is checked like any input.
+  private onRoomEvent(payload: Uint8Array): void {
     let event: unknown
     try {
       event = JSON.parse(Buffer.from(payload).toString('utf8'))
     } catch {
       event = null
     }
-    const parsed = executionEventSchema.safeParse(event)
+    const parsed = roomEventSchema.safeParse(event)
     if (!parsed.success) {
-      this.logger.warn('dropped invalid execution event')
+      this.logger.warn('dropped invalid room event')
       return
     }
-    const frame = encodeApp({ v: 1, t: parsed.data.type, d: parsed.data })
-    for (const connection of this.connections) connection.send(frame)
+    this.deliver(parsed.data)
+  }
+
+  private deliver(event: RoomEvent, except?: Connection): void {
+    const frame = encodeApp({ v: 1, t: event.type, d: event })
+    for (const connection of this.connections) {
+      if (connection === except) continue
+      if (event.type === 'notify.created' && connection.userId !== event.userId) continue
+      connection.send(frame)
+    }
+  }
+
+  // Sent to this instance's users directly, as a publish does not come back to its sender.
+  private broadcast(event: RoomEvent, except?: Connection): void {
+    this.deliver(event, except)
+    const payload = new TextEncoder().encode(JSON.stringify(event))
+    this.storage.bus.publish(channels.events(this.roomId), payload).catch((error: unknown) => {
+      this.logger.error({ err: error }, 'failed to publish room event')
+    })
   }
 
   applyControl(message: RoomControl): void {
@@ -495,16 +515,71 @@ export class Room {
     return true
   }
 
-  // Chat and execution events arrive in later features, so nothing is accepted yet.
+  private sendError(connection: Connection, code: string, message: string, id?: string): void {
+    connection.send(encodeApp({ v: 1, t: 'error', ...(id ? { id } : {}), d: { code, message } }))
+  }
+
   private handleApp(connection: Connection, decoder: decoding.Decoder): void {
     const envelope = appEnvelopeSchema.parse(JSON.parse(decoding.readVarString(decoder)))
-    connection.send(
-      encodeApp({
-        v: 1,
-        t: 'error',
-        ...(envelope.id ? { id: envelope.id } : {}),
-        d: { code: 'unsupported_event', message: `unsupported event ${envelope.t}` },
-      }),
+    switch (envelope.t) {
+      case 'chat.send':
+        this.handleChat(connection, envelope.d, envelope.id)
+        break
+      case 'chat.typing':
+        this.handleTyping(connection, envelope.d)
+        break
+      default:
+        this.sendError(connection, 'unsupported_event', `unsupported event ${envelope.t}`, envelope.id)
+    }
+  }
+
+  private handleChat(connection: Connection, data: unknown, id?: string): void {
+    const parsed = chatSendSchema.safeParse(data)
+    if (!parsed.success) {
+      this.sendError(connection, 'invalid_message', 'That message cannot be sent', id)
+      return
+    }
+    // Refused, not disconnected: someone typing fast is not an attacker, and the socket also
+    // carries their document.
+    if (!connection.chatBucket.take()) {
+      this.sendError(connection, 'chat_rate_limited', 'You are sending messages too quickly', id)
+      return
+    }
+    const { clientMsgId, body, mentions } = parsed.data
+    this.storage.chat
+      .post({ roomId: this.roomId, authorId: connection.userId, body, mentions })
+      .then((message) => {
+        this.broadcast({
+          type: 'chat.message',
+          id: message.id,
+          clientMsgId,
+          authorId: connection.userId,
+          authorName: connection.name,
+          body: message.body,
+          mentionedUserIds: message.mentionedUserIds,
+          createdAt: message.createdAt.toISOString(),
+        })
+        for (const notification of message.notifications) {
+          this.broadcast({ type: 'notify.created', ...notification, kind: 'MENTION' })
+        }
+      })
+      .catch((error: unknown) => {
+        this.logger.error({ err: error }, 'failed to save a chat message')
+        this.sendError(connection, 'chat_failed', 'That message could not be sent', id)
+      })
+  }
+
+  private handleTyping(connection: Connection, data: unknown): void {
+    const parsed = chatTypingSchema.safeParse(data)
+    if (!parsed.success || !connection.typingBucket.take()) return
+    this.broadcast(
+      {
+        type: 'chat.typing',
+        userId: connection.userId,
+        name: connection.name,
+        typing: parsed.data.typing,
+      },
+      connection,
     )
   }
 

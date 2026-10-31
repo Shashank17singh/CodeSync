@@ -50,6 +50,27 @@ export interface Catalog {
   recordClients(projectId: string, userId: string, clientIds: number[]): Promise<void>
 }
 
+export interface ChatPost {
+  roomId: string
+  authorId: string
+  body: string
+  mentions: string[]
+}
+
+export interface StoredChatMessage {
+  id: string
+  body: string
+  mentionedUserIds: string[]
+  createdAt: Date
+  // Notification rows made for this message, one per mentioned user.
+  notifications: Array<{ id: string; userId: string }>
+}
+
+export interface ChatStore {
+  // Applies the room's profanity setting and keeps only mentions of real members.
+  post(message: ChatPost): Promise<StoredChatMessage>
+}
+
 export interface Storage {
   log: UpdateLog
   locks: Locks
@@ -57,6 +78,7 @@ export interface Storage {
   slots: Slots
   docs: DocStore
   catalog: Catalog
+  chat: ChatStore
 }
 
 export const channels = {

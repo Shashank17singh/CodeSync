@@ -1,13 +1,17 @@
 import { randomUUID } from 'node:crypto'
+import { maskProfanity } from '@codesync/shared'
 import type {
   Bus,
   Catalog,
   CatalogFile,
+  ChatPost,
+  ChatStore,
   DocStore,
   Locks,
   RoomAccess,
   Slots,
   Storage,
+  StoredChatMessage,
   StoredDoc,
   UpdateLog,
 } from './types.js'
@@ -22,6 +26,8 @@ export class MemoryHub {
   readonly locks = new Map<string, { token: string; expiresAt: number }>()
   readonly slots = new Map<string, Map<string, number>>()
   readonly listeners = new Map<string, Set<(payload: Uint8Array) => void>>()
+  readonly messages: Array<StoredChatMessage & { roomId: string }> = []
+  profanityFilter = false
 
   setAccess(userId: string, access: RoomAccess): void {
     this.access.set(userId, access)
@@ -35,6 +41,7 @@ export class MemoryHub {
       slots: new MemorySlots(this),
       docs: new MemoryDocStore(this),
       catalog: new MemoryCatalog(this),
+      chat: new MemoryChat(this),
     }
   }
 }
@@ -143,6 +150,26 @@ class MemoryDocStore implements DocStore {
     if ((this.hub.docs.get(projectId)?.version ?? 0) !== expectedVersion) return false
     this.hub.docs.set(projectId, { state, version: expectedVersion + 1 })
     return true
+  }
+}
+
+class MemoryChat implements ChatStore {
+  constructor(private readonly hub: MemoryHub) {}
+
+  async post({ roomId, authorId, body, mentions }: ChatPost): Promise<StoredChatMessage> {
+    const mentionedUserIds = [...new Set(mentions)].filter(
+      (userId) => this.hub.access.has(userId) && userId !== authorId,
+    )
+    const message = {
+      id: randomUUID(),
+      roomId,
+      body: this.hub.profanityFilter ? maskProfanity(body) : body,
+      mentionedUserIds,
+      createdAt: new Date(),
+      notifications: mentionedUserIds.map((userId) => ({ id: randomUUID(), userId })),
+    }
+    this.hub.messages.push(message)
+    return message
   }
 }
 

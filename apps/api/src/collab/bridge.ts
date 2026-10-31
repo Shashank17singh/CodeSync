@@ -3,7 +3,7 @@ import {
   BUS_SENDER_ID_BYTES,
   YDOC_ROOTS,
   collabKeys,
-  type ExecutionEvent,
+  type RoomEvent,
   type RoomControl,
 } from '@codesync/shared'
 import type { FastifyBaseLogger } from 'fastify'
@@ -112,7 +112,7 @@ export class CollabBridge {
   }
 
   // Only live display depends on this, so a lost event must not fail the caller.
-  async publishExecutionEvent(roomId: string, event: ExecutionEvent): Promise<void> {
+  async publishRoomEvent(roomId: string, event: RoomEvent): Promise<void> {
     try {
       const payload = new TextEncoder().encode(JSON.stringify(event))
       await this.transport.publish(collabKeys.events(roomId), this.frame(payload))

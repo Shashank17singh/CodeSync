@@ -375,6 +375,9 @@ importers:
       '@codesync/shared':
         specifier: workspace:*
         version: link:../shared
+      lib0:
+        specifier: 0.2.119
+        version: 0.2.119
       y-indexeddb:
         specifier: 9.0.12
         version: 9.0.12(yjs@13.6.33)

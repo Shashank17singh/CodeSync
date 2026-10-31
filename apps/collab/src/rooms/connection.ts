@@ -1,4 +1,4 @@
-import { COLLAB_LIMITS, type CollabRole } from '@codesync/shared'
+import { CHAT_LIMITS, COLLAB_LIMITS, type CollabRole } from '@codesync/shared'
 import type { Logger } from 'pino'
 import { WebSocket } from 'ws'
 import { TokenBucket } from '../limits/tokenBucket.js'
@@ -13,6 +13,8 @@ export class Connection {
     COLLAB_LIMITS.awarenessPerSecond,
     COLLAB_LIMITS.awarenessBurst,
   )
+  readonly chatBucket = new TokenBucket(CHAT_LIMITS.messagesPerSecond, CHAT_LIMITS.messageBurst)
+  readonly typingBucket = new TokenBucket(CHAT_LIMITS.typingPerSecond, 2)
   readonly awarenessClients = new Set<number>()
   readonly yjsClients = new Set<number>()
   deniedWrites = 0

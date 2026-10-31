@@ -107,7 +107,7 @@ export async function failExecution(
     where: { id: executionId },
     select: { roomId: true },
   })
-  await bridge.publishExecutionEvent(roomId, {
+  await bridge.publishRoomEvent(roomId, {
     type: 'exec.finished',
     executionId,
     status: 'INTERNAL_ERROR',

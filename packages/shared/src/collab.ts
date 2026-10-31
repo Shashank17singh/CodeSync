@@ -134,6 +134,42 @@ export const executionEventSchema = z.discriminatedUnion('type', [
 ])
 export type ExecutionEvent = z.infer<typeof executionEventSchema>
 
+// Everything that fans out to a room on room:{id}:events.
+export const roomEventSchema = z.discriminatedUnion('type', [
+  ...executionEventSchema.options,
+  z.object({
+    type: z.literal('chat.message'),
+    id: z.uuid(),
+    clientMsgId: z.string().max(64),
+    authorId: z.uuid(),
+    authorName: z.string(),
+    body: z.string(),
+    mentionedUserIds: z.array(z.uuid()),
+    createdAt: z.string(),
+  }),
+  z.object({ type: z.literal('chat.deleted'), id: z.uuid() }),
+  z.object({
+    type: z.literal('chat.typing'),
+    userId: z.uuid(),
+    name: z.string(),
+    typing: z.boolean(),
+  }),
+  z.object({
+    type: z.literal('comment.changed'),
+    fileId: z.uuid(),
+    threadId: z.uuid(),
+    action: z.string().max(32),
+  }),
+  // Delivered only to userId's own connections.
+  z.object({
+    type: z.literal('notify.created'),
+    userId: z.uuid(),
+    id: z.uuid(),
+    kind: z.string().max(32),
+  }),
+])
+export type RoomEvent = z.infer<typeof roomEventSchema>
+
 export const appEnvelopeSchema = z.object({
   v: z.literal(1),
   t: z.string().min(1).max(64),

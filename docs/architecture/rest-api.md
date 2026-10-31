@@ -65,8 +65,8 @@ Details are in [auth.md](auth.md).
 | GET | `/auth/oauth/:provider` | Start GitHub or Google OAuth | Public | Built |
 | GET | `/auth/oauth/:provider/callback` | Complete OAuth | Public | Built |
 | GET, PATCH | `/me` | Read or update profile and editor settings | User | Built |
-| GET | `/me/notifications` | Paginated notifications | User | Planned |
-| POST | `/me/notifications/:id/read` | Mark as read | User | Planned |
+| GET | `/me/notifications` | Recent notifications | User | Built |
+| POST | `/me/notifications/:id/read` | Mark as read | User | Built |
 | GET | `/me/submissions` | Own submission history | User | Built |
 
 ## Execution
@@ -89,19 +89,20 @@ Details are in [auth.md](auth.md).
 | POST | `/snapshots/:id/github` | Push to GitHub (stretch goal) | Editor+ | Planned |
 | GET | `/projects/:id/files/:fileId/blame` | Line attribution | Viewer+ | Planned |
 
-## Chat and comments (3.9)
+## Chat and comments
 
 Chat messages are sent over WebSocket. REST covers history and moderation.
 
 | Method | Path | Purpose | Access | Status |
 | --- | --- | --- | --- | --- |
-| GET | `/rooms/:id/messages?cursor=` | Paginated chat history | Viewer+ | Planned |
-| DELETE | `/rooms/:id/messages/:messageId` | Delete message | Owner | Planned |
-| POST | `/rooms/:id/read` | Update unread marker | Viewer+ | Planned |
-| GET, POST | `/files/:id/comments` | List threads, create anchored thread | Viewer+ | Planned |
-| POST | `/comments/:id/replies` | Reply to thread | Viewer+ | Planned |
-| PATCH | `/comments/:id` | Edit, resolve or reopen | Author, Owner | Planned |
-| DELETE | `/comments/:id` | Delete comment | Author, Owner | Planned |
+| GET | `/rooms/:id/messages?cursor=` | Paginated chat history | Viewer+ | Built |
+| DELETE | `/rooms/:id/messages/:messageId` | Delete message | Owner | Built |
+| POST | `/rooms/:id/read` | Update unread marker | Viewer+ | Built |
+| GET | `/rooms/:id/unread` | Unread count | Viewer+ | Built |
+| GET, POST | `/files/:id/comments` | List threads, create anchored thread | Viewer+ | Built |
+| POST | `/comments/:id/replies` | Reply to thread | Viewer+ | Built |
+| PATCH | `/comments/:id` | Edit, resolve or reopen | Author, Owner | Built |
+| DELETE | `/comments/:id` | Delete comment | Author, Owner | Built |
 
 ## AI review
 
