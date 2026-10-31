@@ -46,6 +46,14 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm --filter @codesync/db migrate:deploy
       - run: pnpm test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: BullMQ contract between Node and Python
+        working-directory: services/executor
+        run: |
+          pip install -e '.[dev]'
+          pytest -m redis
 
   # Runs the attack suite on real Docker, with and without gVisor.
   sandbox:

@@ -1,7 +1,7 @@
 # Execution service
 
-Runs untrusted code in disposable containers. This is the library and CLI. The queue
-that feeds it arrives with step 3.6.
+Runs untrusted code in disposable containers. The queue that feeds it is described in
+[execution-queue.md](../../docs/architecture/execution-queue.md).
 
 Written in Python because BullMQ has official Node and Python clients but no official Go client.
 

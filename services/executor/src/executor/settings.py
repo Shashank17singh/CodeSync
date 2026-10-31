@@ -25,6 +25,13 @@ class Settings:
     redis_url: str = "redis://localhost:6379"
     image_prefix: str = "codesync/sandbox"
     image_tag: str = "1"
+    api_url: str = ""
+    internal_service_token: str = ""
+    # Sandboxes this machine runs at once, and how many only interactive runs may use.
+    slots: int = 2
+    reserved_for_run: int = 1
+    metrics_host: str = "127.0.0.1"
+    metrics_port: int = 9100
     pool_size: int = 3
     pool_max_idle_s: float = 600.0
     runtime: str = "runsc"
@@ -39,6 +46,14 @@ class Settings:
         defaults = cls()
         return cls(
             redis_url=os.environ.get("REDIS_URL", defaults.redis_url),
+            api_url=os.environ.get("API_URL", defaults.api_url),
+            internal_service_token=os.environ.get("INTERNAL_SERVICE_TOKEN", ""),
+            slots=int(os.environ.get("EXECUTOR_SLOTS", defaults.slots)),
+            reserved_for_run=int(
+                os.environ.get("EXECUTOR_RESERVED_FOR_RUN", defaults.reserved_for_run)
+            ),
+            metrics_host=os.environ.get("METRICS_HOST", defaults.metrics_host),
+            metrics_port=int(os.environ.get("METRICS_PORT", defaults.metrics_port)),
             image_prefix=os.environ.get("SANDBOX_IMAGE_PREFIX", defaults.image_prefix),
             image_tag=os.environ.get("SANDBOX_IMAGE_TAG", defaults.image_tag),
             pool_size=int(os.environ.get("SANDBOX_POOL_SIZE", defaults.pool_size)),

@@ -3,8 +3,11 @@ packages:
   - packages/*
 minimumReleaseAgeExclude:
   - ws@8.22.1
+  - bullmq@6.5.3
 allowBuilds:
   '@embedded-postgres/windows-x64': true
   '@prisma/engines': true
   esbuild: true
+  # Optional native speed-up for BullMQ. It works without it.
+  msgpackr-extract: false
   prisma: true

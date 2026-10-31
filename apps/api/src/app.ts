@@ -8,11 +8,13 @@ import type { ApiConfig } from './config.js'
 import { ApiError } from './lib/errors.js'
 import { ZIP_LIMITS } from './lib/zip.js'
 import type { Mailer } from './mailer.js'
+import type { ExecutionQueue } from './queue/executionQueue.js'
 import { registerOAuthRoutes } from './modules/auth/oauth.js'
 import type { OAuthProviders } from './modules/auth/providers.js'
 import type { RateLimiter } from './modules/auth/rateLimit.js'
 import { registerAuthRoutes } from './modules/auth/routes.js'
 import { ACCESS_TOKEN_AUDIENCE, SessionService } from './modules/auth/sessions.js'
+import { registerExecutionRoutes } from './modules/executions.js'
 import { registerFileRoutes } from './modules/files.js'
 import { registerInviteRoutes } from './modules/invites.js'
 import { registerProfileRoutes } from './modules/profile.js'
@@ -26,6 +28,7 @@ export interface AppServices {
   mailer: Mailer
   limiter: RateLimiter
   oauth: OAuthProviders
+  queue: ExecutionQueue
   config: ApiConfig
   logger: FastifyBaseLogger
 }
@@ -143,6 +146,7 @@ export function buildApp(services: AppServices): FastifyInstance {
       registerRoomRoutes(api, deps)
       registerInviteRoutes(api, deps)
       registerFileRoutes(api, deps)
+      registerExecutionRoutes(api, deps)
     },
     { prefix: '/api/v1' },
   )

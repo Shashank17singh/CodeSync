@@ -7,7 +7,9 @@ name = "codesync-executor"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+  "bullmq==3.4.6",
   "docker==7.2.0",
+  "prometheus-client==0.26.0",
   "pydantic==2.14.2",
   "redis==8.1.0",
   "structlog==26.1.0",
@@ -15,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "fakeredis[lua]==2.40.0",
   "mypy==2.4.1",
   "pytest==9.2.0",
   "ruff==0.17.3",
@@ -27,6 +30,7 @@ where = ["src"]
 testpaths = ["tests"]
 markers = [
   "docker: needs a real Docker daemon and the sandbox images",
+  "redis: needs a real Redis server at TEST_REDIS_URL",
 ]
 
 [tool.mypy]
@@ -36,7 +40,7 @@ explicit_package_bases = true
 mypy_path = ["src", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["docker.*"]
+module = ["bullmq.*", "docker.*"]
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -49,4 +53,4 @@ select = ["E", "F", "I", "UP", "B", "S", "RUF"]
 ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S603", "S108"]
+"tests/**" = ["S603", "S607", "S108"]

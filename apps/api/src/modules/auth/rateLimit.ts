@@ -38,7 +38,11 @@ export const accountKey = (scope: string, email: string): string =>
 
 export const ipKey = (scope: string, ip: string): string => `rate:${scope}:ip:${ip}`
 
-export async function enforceRateLimits(limiter: RateLimiter, rules: RateRule[]): Promise<void> {
+export async function enforceRateLimits(
+  limiter: RateLimiter,
+  rules: RateRule[],
+  message = 'Too many attempts, try again later',
+): Promise<void> {
   let results: RateLimitResult[]
   try {
     // Every rule counts the attempt, including those after the first one to refuse.
@@ -52,7 +56,7 @@ export async function enforceRateLimits(limiter: RateLimiter, rules: RateRule[])
   const refused = results.filter((result) => !result.allowed)
   if (refused.length === 0) return
   const retryAfterMs = Math.max(...refused.map((result) => result.retryAfterMs))
-  throw new ApiError(429, 'rate_limited', 'Too many attempts, try again later', {
+  throw new ApiError(429, 'rate_limited', message, {
     'retry-after': String(Math.ceil(retryAfterMs / 1000)),
   })
 }

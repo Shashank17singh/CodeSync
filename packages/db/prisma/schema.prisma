@@ -371,24 +371,26 @@ model Comment {
 }
 
 model Execution {
-  id         String          @id @default(uuid()) @db.Uuid
-  roomId     String          @db.Uuid
-  projectId  String          @db.Uuid
-  userId     String          @db.Uuid
-  language   Language
-  entryPath  String          @db.VarChar(1024)
-  stdin      String?
-  status     ExecutionStatus @default(QUEUED)
-  stdout     String?
-  stderr     String?
-  exitCode   Int?
-  timeMs     Int?
-  memoryKb   Int?
-  workerId   String?         @db.VarChar(120)
-  attempts   Int             @default(0)
-  queuedAt   DateTime        @default(now())
-  startedAt  DateTime?
-  finishedAt DateTime?
+  compileOutput String?
+  message       String?
+  id            String          @id @default(uuid()) @db.Uuid
+  roomId        String          @db.Uuid
+  projectId     String          @db.Uuid
+  userId        String          @db.Uuid
+  language      Language
+  entryPath     String          @db.VarChar(1024)
+  stdin         String?
+  status        ExecutionStatus @default(QUEUED)
+  stdout        String?
+  stderr        String?
+  exitCode      Int?
+  timeMs        Int?
+  memoryKb      Int?
+  workerId      String?         @db.VarChar(120)
+  attempts      Int             @default(0)
+  queuedAt      DateTime        @default(now())
+  startedAt     DateTime?
+  finishedAt    DateTime?
 
   room    Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

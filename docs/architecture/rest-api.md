@@ -69,13 +69,13 @@ Details are in [auth.md](auth.md).
 | POST | `/me/notifications/:id/read` | Mark as read | User | Planned |
 | GET | `/me/submissions` | Own submission history | User | Planned |
 
-## Execution (3.5, 3.6)
+## Execution
 
 | Method | Path | Purpose | Access | Status |
 | --- | --- | --- | --- | --- |
-| POST | `/rooms/:id/executions` | Queue a run | Editor+ | Planned |
-| GET | `/rooms/:id/executions` | Paginated run history | Viewer+ | Planned |
-| GET | `/executions/:id` | Run result | Viewer+ | Planned |
+| POST | `/rooms/:id/executions` | Queue a run, `429` at the limit, `503` when full | Editor+ | Built |
+| GET | `/rooms/:id/executions` | Run history | Viewer+ | Built |
+| GET | `/executions/:id` | Run result | Viewer+ | Built |
 
 ## History (3.10)
 
@@ -136,7 +136,8 @@ Chat messages are sent over WebSocket. REST covers history and moderation.
 | Method | Path | Purpose | Access | Status |
 | --- | --- | --- | --- | --- |
 | GET | `/healthz` (no prefix) | Liveness | Public | Built |
-| POST | `/internal/executions/:id/result` | Worker reports final result | Service | Planned |
+| POST | `/internal/executions/:id/started` | Worker claims a run, answers whether to proceed | Service | Built |
+| POST | `/internal/executions/:id/result` | Worker reports final result | Service | Built |
 | POST | `/internal/submissions/:id/result` | Worker reports judge result | Service | Planned |
 | GET | `/internal/problems/:id/testcases` | Worker fetches judge data | Service | Planned |
-| GET | `/metrics` | Prometheus metrics | Internal network | Planned |
+| GET | `/metrics` on each executor worker | Prometheus metrics | Internal network | Built |

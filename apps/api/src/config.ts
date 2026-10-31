@@ -13,6 +13,7 @@ const envSchema = z.object({
   COLLAB_TOKEN_SECRET: z.string().min(32),
   INVITE_TOKEN_SECRET: z.string().min(32),
   OAUTH_STATE_SECRET: z.string().min(32),
+  INTERNAL_SERVICE_TOKEN: z.string().min(32),
   PUBLIC_WEB_URL: z.url(),
   PUBLIC_API_URL: z.url(),
   SMTP_URL: z.string().min(1),
@@ -31,6 +32,7 @@ export interface ApiConfig {
   collabTokenSecret: string
   inviteTokenSecret: string
   oauthStateSecret: string
+  internalServiceToken: string
   publicWebUrl: string
   publicApiUrl: string
   secureCookies: boolean
@@ -66,6 +68,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): ProcessConfig {
     collabTokenSecret: parsed.COLLAB_TOKEN_SECRET,
     inviteTokenSecret: parsed.INVITE_TOKEN_SECRET,
     oauthStateSecret: parsed.OAUTH_STATE_SECRET,
+    internalServiceToken: parsed.INTERNAL_SERVICE_TOKEN,
     publicWebUrl: parsed.PUBLIC_WEB_URL,
     publicApiUrl: parsed.PUBLIC_API_URL,
     smtpUrl: parsed.SMTP_URL,

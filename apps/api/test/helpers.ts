@@ -9,12 +9,14 @@ import type { ApiConfig } from '../src/config.js'
 import type { InviteEmail, LinkEmail, Mailer } from '../src/mailer.js'
 import type { OAuthProviders } from '../src/modules/auth/providers.js'
 import { MemoryRateLimiter, type RateLimiter } from '../src/modules/auth/rateLimit.js'
+import type { ExecutionQueue, RunJob } from '../src/queue/executionQueue.js'
 
 export const config: ApiConfig = {
   accessTokenSecret: 'access-secret-with-at-least-32-characters',
   collabTokenSecret: 'collab-secret-with-at-least-32-characters',
   inviteTokenSecret: 'invite-secret-with-at-least-32-characters',
   oauthStateSecret: 'oauth-state-secret-with-at-least-32-characters',
+  internalServiceToken: 'internal-service-token-with-at-least-32-chars',
   publicWebUrl: 'http://localhost:5173',
   publicApiUrl: 'http://localhost:3000',
   secureCookies: true,
@@ -63,6 +65,21 @@ export class MemoryTransport implements BridgeTransport {
   }
 }
 
+export class MemoryExecutionQueue implements ExecutionQueue {
+  readonly jobs: RunJob[] = []
+  failure: Error | null = null
+  waiting: number | null = null
+
+  async enqueueRun(job: RunJob): Promise<void> {
+    if (this.failure) throw this.failure
+    this.jobs.push(job)
+  }
+
+  async waitingCount(): Promise<number> {
+    return this.waiting ?? this.jobs.length
+  }
+}
+
 export class RecordingMailer implements Mailer {
   readonly sent: InviteEmail[] = []
   readonly verifications: LinkEmail[] = []
@@ -87,6 +104,7 @@ export interface TestApi {
   transport: MemoryTransport
   mailer: RecordingMailer
   limiter: RateLimiter
+  queue: MemoryExecutionQueue
   close: () => Promise<void>
 }
 
@@ -105,12 +123,14 @@ export async function createTestApi(
   const logger = options.logger ?? pino({ level: 'silent' })
   const mailer = new RecordingMailer()
   const limiter = options.limiter ?? new MemoryRateLimiter()
+  const queue = new MemoryExecutionQueue()
   const app = buildApp({
     prisma,
     config: { ...config, trustProxyHops: options.trustProxyHops ?? 0 },
     logger,
     mailer,
     limiter,
+    queue,
     oauth: options.oauth ?? {},
     bridge: new CollabBridge(transport, logger),
   })
@@ -121,6 +141,7 @@ export async function createTestApi(
     transport,
     mailer,
     limiter,
+    queue,
     close: async () => {
       await app.close()
       await prisma.$disconnect()

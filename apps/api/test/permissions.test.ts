@@ -160,6 +160,16 @@ const CASES: readonly Case[] = [
     success: 200,
   },
   {
+    action: 'execution.run',
+    request: (f) => ({
+      method: 'POST',
+      url: `/rooms/${f.roomId}/executions`,
+      payload: { projectId: f.projectId, entryPath: 'main.py' },
+    }),
+    allowed: ['owner', 'editor'],
+    success: 202,
+  },
+  {
     action: 'collab.token',
     request: (f) => ({
       method: 'POST',
@@ -172,7 +182,13 @@ const CASES: readonly Case[] = [
 ]
 
 // Blocked for everyone during a lock, including the owner.
-const WRITES = new Set<Action>(['project.create', 'project.delete', 'file.write', 'file.import'])
+const WRITES = new Set<Action>([
+  'project.create',
+  'project.delete',
+  'file.write',
+  'file.import',
+  'execution.run',
+])
 
 describe('permission matrix', () => {
   let api: TestApi
@@ -257,8 +273,8 @@ describe('permission matrix', () => {
 describe('permission table', () => {
   it('covers every action with a route, or lists why it has none', () => {
     const routed = new Set(CASES.map((entry) => entry.action))
-    // room.join has its own tests above. The other two arrive with their features.
-    const noRouteYet = new Set<Action>(['room.join', 'execution.run', 'chat.send'])
+    // room.join has its own tests above. chat.send arrives with chat in 3.9.
+    const noRouteYet = new Set<Action>(['room.join', 'chat.send'])
     for (const action of ACTIONS) expect(routed.has(action) || noRouteYet.has(action)).toBe(true)
   })
 
