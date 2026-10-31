@@ -76,7 +76,8 @@ export function registerInviteRoutes(app: FastifyInstance, deps: AppDeps): void 
       return { id: created.id, token }
     })
 
-    const inviteUrl = `${config.publicWebUrl}/invite/${invite.token}`
+    // A fragment, so the token never reaches a server or its access logs.
+    const inviteUrl = `${config.publicWebUrl}/invite#token=${invite.token}`
     if (body.email) await mailer.sendInvite({ to: body.email, roomName: room.name, inviteUrl })
     return reply.status(201).send({ inviteId: invite.id, inviteUrl, expiresAt, maxUses })
   })

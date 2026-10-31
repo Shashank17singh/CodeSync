@@ -5,7 +5,13 @@ import { buildApp } from './app.js'
 import { CollabBridge } from './collab/bridge.js'
 import { RedisBridgeTransport } from './collab/redisTransport.js'
 import { loadConfig } from './config.js'
-import { LogMailer } from './mailer.js'
+import { SmtpMailer } from './mailer.js'
+import {
+  createGitHubProvider,
+  createGoogleProvider,
+  type OAuthProviders,
+} from './modules/auth/providers.js'
+import { RedisRateLimiter } from './modules/auth/rateLimit.js'
 
 const config = loadConfig(process.env)
 const logger = pino({ level: config.logLevel })
@@ -14,12 +20,19 @@ const prisma = createPrismaClient(config.databaseUrl)
 const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: 1 })
 redis.on('error', (error) => logger.error({ err: error }, 'redis error'))
 
+const oauth: OAuthProviders = {
+  ...(config.github ? { github: createGitHubProvider(config.github) } : {}),
+  ...(config.google ? { google: createGoogleProvider(config.google) } : {}),
+}
+
 const app = buildApp({
   prisma,
   config,
   logger,
+  oauth,
   bridge: new CollabBridge(new RedisBridgeTransport(redis, prisma), logger),
-  mailer: new LogMailer(logger),
+  limiter: new RedisRateLimiter(redis),
+  mailer: new SmtpMailer(config.smtpUrl, config.mailFrom),
 })
 
 await app.listen({ port: config.port, host: '0.0.0.0' })

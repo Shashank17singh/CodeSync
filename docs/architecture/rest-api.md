@@ -31,7 +31,7 @@ change when they are built.
 | POST | `/invites/accept` | Join with `{ token }` | User | Built |
 | POST | `/rooms/:id/collab-token` | Issue a 5-minute token for `{ projectId }` | Viewer+ | Built |
 
-The baseline had the invite token in the URL. It moved to the body because a signed token exceeds
+Invite links carry the token in a URL fragment, and the web page posts it. The baseline had the token in the path. It moved to the body because a signed token exceeds
 Fastify's parameter length limit, and because URLs end up in proxy logs.
 
 ## Projects and files
@@ -48,20 +48,23 @@ Fastify's parameter length limit, and because URLs end up in proxy logs.
 | POST | `/projects/:id/import` | Upload zip as `application/zip` | Editor+ | Built |
 | GET | `/projects/:id/export` | Download project zip | Viewer+ | Built |
 
-## Auth and profile (3.4)
+## Auth and profile
+
+Details are in [auth.md](auth.md).
 
 | Method | Path | Purpose | Access | Status |
 | --- | --- | --- | --- | --- |
-| POST | `/auth/signup` | Register with Argon2id password hashing | Public | Planned |
-| POST | `/auth/verify-email` | Consume verification token | Public | Planned |
-| POST | `/auth/login` | Issue access token and refresh cookie | Public | Planned |
-| POST | `/auth/refresh` | Rotate refresh token, revoke family on reuse | Cookie + CSRF | Planned |
-| POST | `/auth/logout` | Revoke current session family | Cookie + CSRF | Planned |
-| POST | `/auth/password/forgot` | Send reset email | Public | Planned |
-| POST | `/auth/password/reset` | Set new password, revoke sessions | Public | Planned |
-| GET | `/auth/oauth/:provider` | Start GitHub or Google OAuth | Public | Planned |
-| GET | `/auth/oauth/:provider/callback` | Complete OAuth | Public | Planned |
-| GET, PATCH | `/me` | Read or update profile and editor settings | User | Planned |
+| POST | `/auth/signup` | Register with Argon2id password hashing | Public | Built |
+| POST | `/auth/verify-email` | Verify with `{ token, password }` | Public | Built |
+| POST | `/auth/verify-email/resend` | Send a new verification link | Public | Built |
+| POST | `/auth/login` | Issue access token and refresh cookie | Public | Built |
+| POST | `/auth/refresh` | Rotate refresh token, revoke family on reuse | Cookie + CSRF | Built |
+| POST | `/auth/logout` | Revoke current session family | Cookie + CSRF | Built |
+| POST | `/auth/password/forgot` | Send reset email | Public | Built |
+| POST | `/auth/password/reset` | Set new password, revoke sessions | Public | Built |
+| GET | `/auth/oauth/:provider` | Start GitHub or Google OAuth | Public | Built |
+| GET | `/auth/oauth/:provider/callback` | Complete OAuth | Public | Built |
+| GET, PATCH | `/me` | Read or update profile and editor settings | User | Built |
 | GET | `/me/notifications` | Paginated notifications | User | Planned |
 | POST | `/me/notifications/:id/read` | Mark as read | User | Planned |
 | GET | `/me/submissions` | Own submission history | User | Planned |

@@ -1,3 +1,4 @@
+import cookie from '@fastify/cookie'
 import type { PrismaClient } from '@codesync/db'
 import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify'
 import jwt from 'jsonwebtoken'
@@ -7,24 +8,38 @@ import type { ApiConfig } from './config.js'
 import { ApiError } from './lib/errors.js'
 import { ZIP_LIMITS } from './lib/zip.js'
 import type { Mailer } from './mailer.js'
+import { registerOAuthRoutes } from './modules/auth/oauth.js'
+import type { OAuthProviders } from './modules/auth/providers.js'
+import type { RateLimiter } from './modules/auth/rateLimit.js'
+import { registerAuthRoutes } from './modules/auth/routes.js'
+import { ACCESS_TOKEN_AUDIENCE, SessionService } from './modules/auth/sessions.js'
 import { registerFileRoutes } from './modules/files.js'
 import { registerInviteRoutes } from './modules/invites.js'
+import { registerProfileRoutes } from './modules/profile.js'
 import { registerRoomRoutes } from './modules/rooms.js'
 
 const PRISMA_UNIQUE_VIOLATION = 'P2002'
-const ACCESS_TOKEN_AUDIENCE = 'api'
 
-export interface AppDeps {
+export interface AppServices {
   prisma: PrismaClient
   bridge: CollabBridge
   mailer: Mailer
+  limiter: RateLimiter
+  oauth: OAuthProviders
   config: ApiConfig
   logger: FastifyBaseLogger
+}
+
+export interface AppDeps extends AppServices {
+  sessions: SessionService
 }
 
 declare module 'fastify' {
   interface FastifyRequest {
     userId: string
+  }
+  interface FastifyContextConfig {
+    public?: boolean
   }
 }
 
@@ -45,14 +60,25 @@ function verifyAccessToken(header: string | undefined, secret: string): string {
   }
 }
 
-export function buildApp(deps: AppDeps): FastifyInstance {
+export function buildApp(services: AppServices): FastifyInstance {
   const app = Fastify({
-    loggerInstance: deps.logger,
-    // Tokens must stay out of request logs: invite links carry them in the path.
+    loggerInstance: services.logger,
+    // Tokens must stay out of request logs: OAuth callbacks carry codes in the query string.
     disableRequestLogging: true,
     bodyLimit: 1024 * 1024,
+    // A hop count, not `true`: trusting every proxy lets a client choose its own IP address.
+    trustProxy: (_address, hop) => hop < services.config.trustProxyHops,
   })
+  const deps: AppDeps = {
+    ...services,
+    sessions: new SessionService(
+      services.prisma,
+      services.config.accessTokenSecret,
+      services.logger,
+    ),
+  }
 
+  void app.register(cookie)
   app.decorateRequest('userId', '')
 
   app.addContentTypeParser(
@@ -65,6 +91,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     if (error instanceof ApiError) {
       return reply
         .status(error.statusCode)
+        .headers(error.headers)
         .send({ error: { code: error.code, message: error.message } })
     }
     if (error instanceof ZodError) {
@@ -102,12 +129,17 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   void app.register(
     async (api) => {
+      // Routes are private unless they opt out, so a forgotten flag fails closed.
       api.addHook('onRequest', async (request) => {
+        if (request.routeOptions.config.public) return
         request.userId = verifyAccessToken(
           request.headers.authorization,
           deps.config.accessTokenSecret,
         )
       })
+      registerAuthRoutes(api, deps)
+      registerOAuthRoutes(api, deps)
+      registerProfileRoutes(api, deps)
       registerRoomRoutes(api, deps)
       registerInviteRoutes(api, deps)
       registerFileRoutes(api, deps)

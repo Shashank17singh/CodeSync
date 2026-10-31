@@ -2,9 +2,9 @@
 
 Real-time collaborative code editor with sandboxed execution, AI review and an online judge.
 
-Built so far: database schema, the collaboration server, presence with live cursors, and the rooms
-and projects API. See [collab.md](docs/architecture/collab.md) and
-[rest-api.md](docs/architecture/rest-api.md).
+Built so far: database schema, the collaboration server, presence with live cursors, the rooms and
+projects API, and authentication. See [collab.md](docs/architecture/collab.md),
+[auth.md](docs/architecture/auth.md) and [rest-api.md](docs/architecture/rest-api.md).
 
 ## Setup
 
@@ -14,17 +14,23 @@ Requires Node.js 20.19 or later, Docker, and Corepack (`corepack enable`).
 corepack pnpm install
 docker compose -f infra/compose/docker-compose.dev.yml up -d
 cp apps/collab/.env.example apps/collab/.env
+cp apps/api/.env.example apps/api/.env
 DATABASE_URL=postgresql://codesync:codesync@localhost:5432/codesync \
   corepack pnpm --filter @codesync/db migrate:deploy
 corepack pnpm build
 ```
 
-Set `COLLAB_TOKEN_SECRET` in `apps/collab/.env`, then start the server:
+Fill in the secrets in both `.env` files, using the same `COLLAB_TOKEN_SECRET` in each, then start
+the servers:
 
 ```sh
+corepack pnpm --filter @codesync/api dev
 corepack pnpm --filter @codesync/collab dev
+curl http://localhost:3000/healthz
 curl http://localhost:4000/healthz
 ```
+
+Development email goes to Mailpit. Read it at <http://localhost:8025>.
 
 ## Testing
 

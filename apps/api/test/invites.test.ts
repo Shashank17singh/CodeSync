@@ -24,7 +24,7 @@ describe('invites', () => {
       as(fixture.owner, { method: 'POST', url: `/rooms/${fixture.roomId}/invites`, payload }),
     )
     expect(response.statusCode).toBe(201)
-    return (response.json().inviteUrl as string).split('/invite/')[1] as string
+    return (response.json().inviteUrl as string).split('#token=')[1] as string
   }
 
   const accept = (userId: string, token: string) =>
