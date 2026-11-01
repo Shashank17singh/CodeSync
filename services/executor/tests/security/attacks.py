@@ -137,18 +137,28 @@ for path in ("/etc/evil", "/usr/bin/python3", "/bin/sh", "/root/x"):
 """
 
 NETWORK = """
-import socket
+import socket, threading
 targets = (("1.1.1.1", 53), ("8.8.8.8", 443), ("169.254.169.254", 80), ("172.17.0.1", 2375))
 for host, port in targets:
     try:
         with socket.create_connection((host, port), timeout=1):
-            print("CONNECTED", host, port)
+            print("CONNECTED", host, port, flush=True)
     except OSError as error:
-        print("BLOCKED", host, error)
-try:
-    print("RESOLVED", socket.gethostbyname("example.com"))
-except OSError as error:
-    print("BLOCKED dns", error)
+        print("BLOCKED", host, error, flush=True)
+
+# A lookup with no network can retry for longer than the run limit, and it cannot be timed out
+# directly. Either way, a lookup that succeeds at any point in this window is reported.
+def lookup():
+    try:
+        print("RESOLVED", socket.gethostbyname("example.com"), flush=True)
+    except OSError as error:
+        print("BLOCKED dns", error, flush=True)
+
+thread = threading.Thread(target=lookup, daemon=True)
+thread.start()
+thread.join(2)
+if thread.is_alive():
+    print("BLOCKED dns still unanswered", flush=True)
 """
 
 READ_SHADOW = """
@@ -167,7 +177,17 @@ def attempt(name, action):
         print("BLOCKED", name, error)
 
 attempt("host root through /proc/1/root", lambda: os.listdir("/proc/1/root/root"))
-attempt("init environment", lambda: open("/proc/1/environ", "rb").read())
+
+# PID 1 here is the sandbox's own process, so reading it is allowed. Holding a worker secret is not.
+def worker_secrets():
+    environment = open("/proc/1/environ", "rb").read()
+    names = (b"INTERNAL_SERVICE_TOKEN", b"REDIS_URL", b"ANTHROPIC_API_KEY")
+    found = [name for name in names if name in environment]
+    if not found:
+        raise OSError("no worker secrets in the init environment")
+    return found
+
+attempt("init environment", worker_secrets)
 attempt("kernel sysrq", lambda: open("/proc/sysrq-trigger", "w").write("h"))
 attempt("kernel core pattern", lambda: open("/proc/sys/kernel/core_pattern", "w").write("|/x"))
 attempt("kernel hostname", lambda: open("/proc/sys/kernel/hostname", "w").write("evil"))

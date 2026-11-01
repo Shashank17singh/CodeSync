@@ -46,11 +46,15 @@ def run_step(
     failure: list[BaseException] = []
 
     def pump() -> None:
+        killing = False
         try:
             for stream, data in process.output():
-                if not collector.add(channel_for(stream, compiling), data):
-                    sandbox.kill()
-                    return
+                if collector.add(channel_for(stream, compiling), data) or killing:
+                    continue
+                # Reading carries on, because Docker's kill can wait for the output pipe to
+                # drain. Stopping here would leave the kill stuck behind a full pipe.
+                killing = True
+                threading.Thread(target=sandbox.kill, name="sandbox-kill", daemon=True).start()
         except Exception as error:
             failure.append(error)
 

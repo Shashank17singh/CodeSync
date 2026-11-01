@@ -30,6 +30,11 @@ from security.attacks import ATTACKS, Attack
 pytestmark = pytest.mark.docker
 
 SETTINGS = Settings(worker_id=f"security-suite-{uuid4().hex[:8]}")
+
+# The worker holds these in production. Setting them here means a leak into sandboxes would fail
+# the /proc attack, which looks for these names in the sandbox's environment.
+for secret in ("INTERNAL_SERVICE_TOKEN", "REDIS_URL", "ANTHROPIC_API_KEY"):
+    os.environ.setdefault(secret, "attack-suite-sentinel")
 ENTRY_NAMES = {Language.PYTHON: "main.py", Language.CPP: "main.cpp"}
 _results: list[tuple[Attack, RunResult, str | None]] = []
 

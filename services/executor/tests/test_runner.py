@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import threading
 import time
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from uuid import uuid4
 
@@ -12,7 +14,7 @@ from executor.languages import PROFILES
 from executor.models import Language, RunRequest, RunResult, SourceFile, Status
 from executor.output import OutputChannel
 from executor.runner import StepResult, classify, execute
-from executor.sandbox import MemoryStats, Sandbox, SandboxError
+from executor.sandbox import MemoryStats, Sandbox, SandboxError, StreamName
 from executor.settings import SandboxLimits
 from local_engine import LocalSandbox, LocalSource
 
@@ -308,3 +310,46 @@ def test_recognises_a_real_python_memory_error() -> None:
 def test_a_memory_marker_only_counts_for_its_own_language() -> None:
     stderr = "java.lang.OutOfMemoryError"
     assert classify(PYTHON, step(1), MemoryStats(1, 0), stderr) is Status.RUNTIME_ERROR
+
+
+class BlockingKillSandbox:
+    """Docker's kill can wait for the output pipe to drain, so kill waits for the reader here."""
+
+    def __init__(self) -> None:
+        self.drained = threading.Event()
+        self.killed = threading.Event()
+
+    def write_files(self, files: Mapping[str, bytes]) -> None:
+        pass
+
+    def start(self, argv: Sequence[str], stdin_file: str | None = None) -> BlockingKillSandbox:
+        return self
+
+    def output(self) -> Iterator[tuple[StreamName, bytes]]:
+        for _ in range(64):
+            yield "stdout", b"x" * 1024
+        self.drained.set()
+
+    def exit_code(self) -> int | None:
+        return 137
+
+    def memory_stats(self) -> MemoryStats | None:
+        return None
+
+    def kill(self) -> None:
+        # As in DockerSandbox, only the first call does the work.
+        if not self.killed.is_set():
+            self.killed.set()
+            self.drained.wait(30)
+
+    def destroy(self) -> None:
+        pass
+
+    def acquire(self, language: Language) -> BlockingKillSandbox:
+        return self
+
+
+def test_output_flood_is_reported_when_killing_needs_the_pipe_drained() -> None:
+    sandbox = BlockingKillSandbox()
+    result = execute(python_request("flood"), sandbox, RecordingEvents(), LIMITS)
+    assert result.status is Status.OUTPUT_LIMIT_EXCEEDED
