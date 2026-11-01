@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify'
 import { unzipSync } from 'fflate'
 import { z } from 'zod'
 import type { AppDeps } from '../app.js'
-import { ApiError, forbidden, invalid, notFound } from '../lib/errors.js'
+import { ApiError, assertExecutionEnabled, forbidden, invalid, notFound } from '../lib/errors.js'
 import { rankSubmissions } from '../lib/leaderboard.js'
 import { fingerprint, similarity, tokenize } from '../lib/winnow.js'
 import { ZIP_LIMITS } from '../lib/zip.js'
@@ -317,6 +317,7 @@ export function registerProblemRoutes(app: FastifyInstance, deps: AppDeps): void
 
   app.post('/problems/:id/validate', async (request, reply) => {
     await requireFaculty(prisma, request.userId)
+    assertExecutionEnabled(config)
     const { id } = idParams.parse(request.params)
     const problem = await prisma.problem.findUnique({
       where: { id },
@@ -341,6 +342,7 @@ export function registerProblemRoutes(app: FastifyInstance, deps: AppDeps): void
   })
 
   app.post('/problems/:slug/submissions', async (request, reply) => {
+    assertExecutionEnabled(config)
     const { slug } = slugParams.parse(request.params)
     const body = submitBody.parse(request.body)
     const problem = await prisma.problem.findFirst({

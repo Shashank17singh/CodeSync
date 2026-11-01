@@ -174,6 +174,7 @@ Redis and PostgreSQL. k6, the sandbox suite, Docker and CI have not been run. Se
 | Node 22.12 or later, where the stack says Node 20 | The test runner needs it, and Node 20 is past end of life |
 | Python executor | The prompt allows Go or Python |
 | Self-hosted single region | Classroom scale |
+| One-server deployments keep code execution off | Sandboxes must not share a machine with the database |
 | One project is opened per room in the workspace | The API allows several, and the first is what the UI opens |
 | GitHub push left out | Stretch goal, and it needs a repository-scoped token per user |
 | Grafana latency is server handling time | True end-to-end latency needs client reporting, so the load test measures it |

@@ -10,8 +10,9 @@ on that date. "Configured" means the setting exists but nothing has exercised it
 2. **Redis has not been used for real.** Locks, pub/sub and BullMQ passed against stand-ins only.
    `.github/workflows/integration.yml` covers this, and it has not run because the repository has
    no remote yet.
-3. **Nginx, Dockerfiles and the production compose files have not been executed.** That includes
-   the Content-Security-Policy, so Monaco may need it adjusted.
+3. **Nginx, Dockerfiles and the production compose files have not been executed.** The
+   Content-Security-Policy itself has been tested: browser tests run the production bundle under
+   the exact policy from the Nginx template.
 
 ## OWASP Top 10 (2021) applied to the API
 

@@ -73,7 +73,8 @@ await prisma.contest.create({
     roomId: contestRoom.id,
     problemSetId: problemSet.id,
     startsAt: new Date(Date.now() - 60_000),
-    endsAt: new Date(Date.now() + 3_600_000),
+    // Long enough to outlast any test run, however slow the machine is.
+    endsAt: new Date(Date.now() + 7 * 24 * 3_600_000),
   },
 })
 

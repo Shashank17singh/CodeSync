@@ -20,3 +20,8 @@ export const conflict = (code: string, message: string): ApiError =>
 
 export const invalid = (code: string, message: string): ApiError =>
   new ApiError(422, code, message)
+
+export function assertExecutionEnabled(config: { executionEnabled: boolean }): void {
+  if (config.executionEnabled) return
+  throw new ApiError(503, 'execution_disabled', 'Running code is turned off on this deployment')
+}

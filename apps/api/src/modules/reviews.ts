@@ -3,7 +3,7 @@ import { REVIEW_LIMITS } from '@codesync/shared'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { AppDeps } from '../app.js'
-import { ApiError, forbidden, invalid, notFound } from '../lib/errors.js'
+import { ApiError, assertExecutionEnabled, forbidden, invalid, notFound } from '../lib/errors.js'
 import { requireRoom } from './access.js'
 import { enforceRateLimits } from './auth/rateLimit.js'
 import { assertServiceToken } from './executions.js'
@@ -149,6 +149,7 @@ export function registerReviewRoutes(app: FastifyInstance, deps: AppDeps): void 
     })
     // Cached answers cost nothing, so they use none of the daily quota.
     if (cached) return reply.status(200).send({ review: cached, cached: true })
+    assertExecutionEnabled(config)
 
     await enforceRateLimits(
       limiter,

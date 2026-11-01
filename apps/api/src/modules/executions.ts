@@ -5,7 +5,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import type { AppDeps } from '../app.js'
 import type { CollabBridge } from '../collab/bridge.js'
-import { ApiError, forbidden, invalid, notFound } from '../lib/errors.js'
+import { ApiError, assertExecutionEnabled, forbidden, invalid, notFound } from '../lib/errors.js'
 import { validateProjectPath } from '../lib/paths.js'
 import type { RunJob } from '../queue/executionQueue.js'
 import { requireRoom } from './access.js'
@@ -124,6 +124,7 @@ export function registerExecutionRoutes(app: FastifyInstance, deps: AppDeps): vo
   app.post('/rooms/:id/executions', async (request, reply) => {
     const { id: roomId } = roomParams.parse(request.params)
     await requireRoom(prisma, roomId, request.userId, 'execution.run')
+    assertExecutionEnabled(config)
     const body = createBody.parse(request.body)
     const entryPath = validateProjectPath(body.entryPath)
     const language = detectLanguage(entryPath)

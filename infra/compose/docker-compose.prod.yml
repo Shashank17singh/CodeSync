@@ -1,5 +1,8 @@
-# The application host. The sandbox workers run elsewhere: see docker-compose.executor.yml.
-# Start with: docker compose -f infra/compose/docker-compose.prod.yml --env-file .env.prod up -d
+# The application host. Running code stays off unless docker-compose.executor-link.yml is added,
+# because sandboxes must never share a machine with the database. See docs/deployment.md.
+#
+# IMAGE_PREFIX and IMAGE_TAG select prebuilt images, which small servers should use: building the
+# web app needs more memory than most of them have.
 name: codesync
 
 services:
@@ -30,9 +33,6 @@ services:
       - ${REDIS_PASSWORD:?set REDIS_PASSWORD}
     volumes:
       - redis-data:/data
-    # Published on the private interface only, for the executor host. Firewall it to that host.
-    ports:
-      - '${PRIVATE_IP:?set PRIVATE_IP}:6379:6379'
     networks: [private]
     healthcheck:
       test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" --no-auth-warning ping']
@@ -43,6 +43,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
 
   migrate:
+    image: ${IMAGE_PREFIX:-codesync}/migrate:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: packages/db/Dockerfile
@@ -54,6 +55,7 @@ services:
     networks: [private]
 
   api:
+    image: ${IMAGE_PREFIX:-codesync}/api:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: apps/api/Dockerfile
@@ -64,6 +66,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       COOKIE_SECURE: 'true'
       TRUST_PROXY_HOPS: '1'
+      EXECUTION_ENABLED: 'false'
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -72,6 +75,7 @@ services:
     networks: [private]
 
   collab:
+    image: ${IMAGE_PREFIX:-codesync}/collab:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: apps/collab/Dockerfile
@@ -80,7 +84,7 @@ services:
     environment:
       DATABASE_URL: postgresql://codesync:${POSTGRES_PASSWORD}@postgres:5432/codesync
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      ALLOWED_ORIGINS: ${PUBLIC_WEB_URL}
+      ALLOWED_ORIGINS: https://${DOMAIN}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -89,6 +93,7 @@ services:
     networks: [private]
 
   nginx:
+    image: ${IMAGE_PREFIX:-codesync}/web:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile
@@ -96,16 +101,21 @@ services:
     ports:
       - '80:80'
       - '443:443'
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN}
     volumes:
-      - ${TLS_CERT_DIR:?set TLS_CERT_DIR}:/etc/nginx/certs:ro
+      # The whole folder, because live/ holds symlinks into archive/.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on: [api, collab]
     networks: [private, public]
 
   prometheus:
     image: prom/prometheus:v3.5.0
+    profiles: [monitoring]
     restart: unless-stopped
     extra_hosts:
-      - 'executor:${EXECUTOR_PRIVATE_IP:?set EXECUTOR_PRIVATE_IP}'
+      - 'executor:${EXECUTOR_PRIVATE_IP:-127.0.0.1}'
     volumes:
       - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
@@ -113,9 +123,10 @@ services:
 
   grafana:
     image: grafana/grafana:12.1.0
+    profiles: [monitoring]
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-}
       GF_USERS_ALLOW_SIGN_UP: 'false'
     volumes:
       - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro

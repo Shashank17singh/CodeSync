@@ -375,7 +375,7 @@ test.describe('the pages around the workspace', () => {
     const page = await signedIn(browser)
     await page.getByRole('link', { name: 'Practice' }).click()
     await page.getByRole('link', { name: 'Friday contest' }).click()
-    await expect(page.getByRole('timer')).toContainText(/Ends in 00:5\d:\d\d/)
+    await expect(page.getByRole('timer')).toContainText(/Ends in \d+:\d\d:\d\d/)
     await expect(page.getByRole('link', { name: 'Add two numbers' })).toBeVisible()
     await page.context().close()
   })
@@ -474,6 +474,18 @@ test.describe('the pages around the workspace', () => {
     await expect(editorText(page)).toContainText('print')
     await scan()
     await context.close()
+  })
+
+  test('the production bundle runs under the Nginx security policy', async ({ page }) => {
+    test.skip(!process.env['E2E_PRODUCTION'], 'Only `vite preview` sends the policy')
+    const violations: string[] = []
+    page.on('console', (message) => {
+      if (message.text().includes('Content Security Policy')) violations.push(message.text())
+    })
+    const response = await page.goto('/login')
+    expect(response?.headers()['content-security-policy']).toContain("script-src 'self'")
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+    expect(violations).toEqual([])
   })
 
   test('a signed-out visitor is sent to sign in', async ({ browser }) => {

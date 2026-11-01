@@ -1,0 +1,9 @@
+# Text files are stored with LF. Scripts and Dockerfiles must also stay LF on checkout, because
+# Linux cannot run them with Windows line endings.
+* text=auto
+*.sh text eol=lf
+*.yml text eol=lf
+*.template text eol=lf
+*.conf text eol=lf
+Dockerfile text eol=lf
+.env*.example text eol=lf

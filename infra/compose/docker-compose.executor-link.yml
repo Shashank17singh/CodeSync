@@ -1,0 +1,15 @@
+# Add this file on the application host only when a separate executor host exists:
+#   docker compose -f infra/compose/docker-compose.prod.yml \
+#     -f infra/compose/docker-compose.executor-link.yml --env-file .env.prod up -d
+#
+# It opens Redis and the API on the private network, for the workers. Firewall both ports so that
+# only the executor host can reach them, because Nginx is not in front of them here.
+services:
+  redis:
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:6379:6379'
+  api:
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:3000:3000'
+    environment:
+      EXECUTION_ENABLED: 'true'

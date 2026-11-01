@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 
 const fromRoot = (path: string): string => fileURLToPath(new URL(path, import.meta.url))
+
+// `vite preview` serves the bundle under the policy Nginx uses, so tests cover that policy too.
+const nginxTemplate = readFileSync(fromRoot('../../infra/nginx/codesync.conf.template'), 'utf8')
+const contentSecurityPolicy = /Content-Security-Policy "([^"]+)"/.exec(nginxTemplate)?.[1] ?? ''
 
 const apiTarget = process.env['VITE_API_TARGET'] ?? 'http://127.0.0.1:3000'
 const collabTarget = process.env['VITE_COLLAB_TARGET'] ?? 'http://127.0.0.1:4000'
@@ -42,6 +47,9 @@ export default defineConfig({
     ],
     // One copy only: two instances of Yjs corrupt documents silently.
     dedupe: ['yjs', 'y-protocols', 'lib0'],
+  },
+  preview: {
+    headers: { 'Content-Security-Policy': contentSecurityPolicy },
   },
   optimizeDeps: {
     // Pre-bundling Monaco runs the dev server out of memory on 8 GB machines.

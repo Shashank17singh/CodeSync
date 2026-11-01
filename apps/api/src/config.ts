@@ -20,6 +20,7 @@ const envSchema = z.object({
   MAIL_FROM: z.string().min(1),
   COOKIE_SECURE: z.enum(['true', 'false']).default('true'),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
+  EXECUTION_ENABLED: z.enum(['true', 'false']).default('true'),
   GITHUB_CLIENT_ID: optional,
   GITHUB_CLIENT_SECRET: optional,
   GOOGLE_CLIENT_ID: optional,
@@ -37,6 +38,8 @@ export interface ApiConfig {
   publicApiUrl: string
   secureCookies: boolean
   trustProxyHops: number
+  // Off on a deployment with no separate executor host, so nothing waits on a missing worker.
+  executionEnabled: boolean
 }
 
 export interface OAuthCredentials {
@@ -75,6 +78,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): ProcessConfig {
     mailFrom: parsed.MAIL_FROM,
     secureCookies: parsed.COOKIE_SECURE === 'true',
     trustProxyHops: parsed.TRUST_PROXY_HOPS,
+    executionEnabled: parsed.EXECUTION_ENABLED === 'true',
     logLevel: parsed.LOG_LEVEL,
     github: credentials(parsed.GITHUB_CLIENT_ID, parsed.GITHUB_CLIENT_SECRET),
     google: credentials(parsed.GOOGLE_CLIENT_ID, parsed.GOOGLE_CLIENT_SECRET),

@@ -1,5 +1,6 @@
 # Build from the repository root: docker build -f apps/collab/Dockerfile .
 FROM node:22-slim AS build
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 WORKDIR /repo
 RUN corepack enable
 COPY . .

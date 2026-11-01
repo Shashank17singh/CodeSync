@@ -21,6 +21,7 @@ export const config: ApiConfig = {
   publicApiUrl: 'http://localhost:3000',
   secureCookies: true,
   trustProxyHops: 0,
+  executionEnabled: true,
 }
 
 export class MemoryTransport implements BridgeTransport {
@@ -125,6 +126,7 @@ export interface TestApiOptions {
   limiter?: RateLimiter
   trustProxyHops?: number
   logger?: FastifyBaseLogger
+  executionEnabled?: boolean
 }
 
 export async function createTestApi(
@@ -138,7 +140,11 @@ export async function createTestApi(
   const queue = new MemoryExecutionQueue()
   const app = buildApp({
     prisma,
-    config: { ...config, trustProxyHops: options.trustProxyHops ?? 0 },
+    config: {
+      ...config,
+      trustProxyHops: options.trustProxyHops ?? 0,
+      executionEnabled: options.executionEnabled ?? true,
+    },
     logger,
     mailer,
     limiter,

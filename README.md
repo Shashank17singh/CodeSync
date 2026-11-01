@@ -77,14 +77,11 @@ cd services/executor && .venv/bin/pytest -m "not docker and not redis"
 
 ## Deployment
 
-1. Copy `.env.prod.example` to `.env.prod` and fill it in.
-2. On the application host:
-   `docker compose -f infra/compose/docker-compose.prod.yml --env-file .env.prod up -d`
-3. On a separate executor host with Docker and gVisor:
-   `docker compose -f infra/compose/docker-compose.executor.yml up -d`
+[docs/deployment.md](docs/deployment.md) covers pushing to GitHub and going online. On a server, run
+`sudo bash infra/deploy/setup-server.sh`, which walks through every step.
 
-Never run sandboxes on the same machine as the database. Grafana listens on `127.0.0.1:3001` of the
-application host, so reach it through an SSH tunnel.
+One server runs everything except code execution, which stays off until a separate executor host
+exists. Never run sandboxes on the same machine as the database.
 
 ## Environment variables
 
@@ -106,6 +103,7 @@ application host, so reach it through an SSH tunnel.
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | API | No | GitHub sign-in |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | API | No | Google sign-in |
 | `ALLOWED_ORIGINS` | Collab | Yes | Comma-separated origins allowed to open sockets |
+| `EXECUTION_ENABLED` | API | No | `false` refuses runs, submissions and reviews. Off by default in production compose |
 | `LOG_LEVEL` | API, collab | No | `info` by default |
 | `API_URL` | Executor | Yes | Where workers report results |
 | `ANTHROPIC_API_KEY` | Executor | No | Without it, reviews use static analyzers only |
@@ -130,5 +128,5 @@ application host, so reach it through an SSH tunnel.
 | Vim or Emacs keys do nothing | Keep the `monaco-vim` and `monaco-emacs` aliases in `vite.config.ts` |
 | Runs stay queued | No worker is running, or it cannot reach Redis. Check `codesync_workers_active` |
 | The worker refuses to start | `SANDBOX_REQUIRE_GVISOR=true` and `runsc` is not installed |
-| Port 4200 or 54330 in use during browser tests | An earlier test stack is still running. Stop it, or wait for it to exit |
+| Port 4199, 4200 or 5199 in use during browser tests | An earlier test stack is still running. Stop it, or set `E2E_PORT_OFFSET=100` to use other ports |
 | Tests fail to start on Node 20 | Vitest needs Node 22.12 or later |

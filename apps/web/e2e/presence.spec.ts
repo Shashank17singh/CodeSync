@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken'
 
 const SECRET = 'e2e-secret-with-at-least-32-characters'
 const ROOM_ID = '11111111-1111-4111-8111-111111111111'
-const COLLAB_URL = 'ws://127.0.0.1:4199/collab'
+const COLLAB_URL = `ws://127.0.0.1:${4199 + Number(process.env['E2E_PORT_OFFSET'] ?? 0)}/collab`
 const LABEL_FADE_MS = 3_000
 
 interface Member {
