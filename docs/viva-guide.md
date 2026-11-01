@@ -60,7 +60,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 
 - **Run:** see the [executor README](../services/executor/README.md). Needs Docker.
 - **Test:** `cd services/executor && .venv/bin/pytest -m "not docker and not redis"`. The attack suite
-  is `pytest -m docker -s`, and **it has not been run yet**. Say so if asked.
+  is `pytest -m docker -s`, which needs Docker. It passes in CI under runc and gVisor.
 
 1. **gVisor over plain Docker.** Slower system calls and some compatibility gaps. A kernel bug in the
    host is far harder to reach through a user-space kernel.
@@ -164,8 +164,13 @@ failed at run time, one only in the production bundle. Testing that bundle in a 
    headers sit in one place, and application ports stay private.
 
 Be ready to say which results are real. The local load figures come from one laptop with simulated
-Redis and PostgreSQL. k6, the sandbox suite, Docker and CI have not been run. See the
+Redis and PostgreSQL. CI, real Redis, PostgreSQL 16 and the sandbox suite all pass on Linux. The k6
+tests, Nginx and a real server deployment have not been run. See the
 [security report](security/report.md).
+
+Debugging stories worth telling: the first Linux run found a server bug that disconnected people
+from rooms of about five or more, and the attack suite found a kill deadlock and a gap in gVisor.
+None of them could appear in tests on a Windows laptop with two users.
 
 ## Assumptions made
 

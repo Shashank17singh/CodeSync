@@ -2,11 +2,12 @@
 
 This puts CodeSync on GitHub and online. Collaboration, chat, comments, history, sign-in and the
 practice pages work on one server. **Running code, judging and AI review stay off** until a second
-server exists, because sandboxes must never share a machine with the database, and the sandbox
-attack suite has not passed yet. Those buttons show "Running code is turned off on this deployment".
+server exists, because sandboxes must never share a machine with the database. Those buttons show
+"Running code is turned off on this deployment".
 
-Docker builds, Nginx and the compose files have never run. Expect to fix something on the first
-deployment, and use `docker compose logs` to see what. See [Status](#status).
+CI builds and publishes the images, but nobody has started this stack on a real server. Expect to
+fix something on the first deployment, and use `docker compose logs` to see what. See
+[Status](#status).
 
 ## 1. Push to GitHub
 
@@ -87,7 +88,8 @@ ssh -L 3001:127.0.0.1:3001 user@your-server
 
 ## Turn on running code
 
-Only do this after the Integration workflow's attack suite has passed under gVisor.
+The Integration workflow runs the attack suite under gVisor. Check that it passes on the commit you
+deploy.
 
 1. Get a second server on the same private network, with Docker and a recent gVisor (`runsc`).
    Register it with `sudo runsc install -- --oci-seccomp`, then restart Docker. Without that flag,
@@ -130,5 +132,8 @@ Only do this after the Integration workflow's attack suite has passed under gVis
 | Packaged API starts | Tested without Docker |
 | Production bundle under the Nginx security policy | Tested in a browser |
 | Nginx configuration syntax | Parsed by a tool, never loaded by Nginx |
-| Compose and workflow files | Parsed as YAML, never run |
-| Docker images, certificate steps, setup wizard | Never run |
+| CI: lint, types, unit, browser, real Redis and PostgreSQL 16 | Passing on Linux |
+| Sandbox attack suite under runc and gVisor | Passing on Linux |
+| Docker images | Built and published by CI, never started together |
+| Compose files | Parsed as YAML, never run |
+| Certificate steps, setup wizard | Never run |

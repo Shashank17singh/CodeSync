@@ -7,9 +7,10 @@ Written in Python because BullMQ has official Node and Python clients but no off
 
 ## Security status
 
-**The attack suite has not been run yet.** It needs a Linux host with real Docker. Until
-`sandbox-report.md` exists from a real run, treat this sandbox as unproven and do not run untrusted
-code with it.
+The attack suite passes on real Docker under runc and gVisor. See the
+[gVisor](../../docs/security/sandbox-report-runsc.md) and
+[runc](../../docs/security/sandbox-report-runc.md) results. That shows these attacks are contained,
+not that no other attack works, so keep this service on its own host.
 
 Without Docker, `pytest -m docker` reports `skipped`. Skipped does not mean contained.
 

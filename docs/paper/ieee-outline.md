@@ -62,8 +62,11 @@ the server and an in-memory stand-in for Redis and PostgreSQL. Each row is a sin
 ## VI. Sandbox security evaluation
 
 - Threat model and layers: gVisor, seccomp, no network, cgroups, one-use containers.
-- Attack suite: 17 attacks covering escape, resource exhaustion and data access.
-- Results under runc and runsc. **[to measure]**
+- Attack suite: 12 attacks covering escape, resource exhaustion and data access, plus 5 checks that
+  ordinary programs still work.
+- Results: all 12 contained under runc and runsc, in `docs/security/sandbox-report-*.md`. Worth
+  reporting: the first run found a kill deadlock (F5) and that gVisor ignores Docker's seccomp
+  profile unless told otherwise (F6). These are one CI run each, so repeat them before publishing.
 - Execution load: 200 concurrent runs, queue wait, run time, failure rate. **[to measure]**
 - Overhead of gVisor compared with runc. **[to measure]**
 

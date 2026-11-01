@@ -5,14 +5,13 @@ on that date. "Configured" means the setting exists but nothing has exercised it
 
 ## Open before real use
 
-1. **The sandbox attack suite has never run.** It needs Docker, which was not available on the
-   development machine. Do not accept untrusted code until it has passed under gVisor.
-2. **Redis has not been used for real.** Locks, pub/sub and BullMQ passed against stand-ins only.
-   `.github/workflows/integration.yml` covers this, and it has not run because the repository has
-   no remote yet.
-3. **Nginx, Dockerfiles and the production compose files have not been executed.** The
-   Content-Security-Policy itself has been tested: browser tests run the production bundle under
-   the exact policy from the Nginx template.
+1. **Nothing has run in production.** The stack has never been started on a real server, so
+   Nginx, HTTPS, the compose files and the setup wizard are unproven. The Docker images do build in
+   CI, and the Content-Security-Policy is tested: browser tests run the production bundle under the
+   exact policy from the Nginx template.
+2. **The attack suite is evidence, not proof.** It shows that these attacks are contained. It cannot
+   show that no other attack works, and it does not cover unknown gVisor or kernel bugs.
+3. **Register gVisor with `--oci-seccomp`.** Without that flag one attack gets further. See F6.
 
 ## OWASP Top 10 (2021) applied to the API
 
@@ -36,6 +35,9 @@ on that date. "Configured" means the setting exists but nothing has exercised it
 | F1 | `pnpm audit` found five advisories in DOMPurify 3.4.15, pulled in by Monaco: one critical, one high, three low | Critical as reported. Monaco's actual use of the affected options was not assessed | Forced 3.4.17 with a pnpm override. Audit is now clean |
 | F2 | Comments had no rate limit, though viewers can post them and each one fans out to the room | Medium | 30 a minute per user, with a test |
 | F3 | Review findings reached Monaco hover text, which it treats as Markdown | Low | Markdown characters are escaped before display |
+| F5 | Found by the attack suite. On an output flood the reader stopped to kill the container, and Docker's kill could wait for that same reader to drain the pipe. The program was held until the time limit and reported as an internal error, holding a sandbox slot | Medium, availability | Killing now happens on its own thread while reading continues. A test reproduces the deadlock without Docker |
+| F6 | Found by the attack suite. gVisor ignores Docker's seccomp profile by default, so a program could create a user namespace and hold capabilities inside it. These were confined to gVisor's own kernel, but they widen what hostile code can reach | Medium | gVisor is registered with `--oci-seccomp`, and the attack is now blocked. Production must do the same |
+| F7 | Found by the attack suite. Java could not compile, because the sandbox's fixed PATH leaves out the JDK | High, functional | The Java image links `java` and `javac` into a folder on that PATH |
 | F4 | Found by the first Linux CI run. The presence-entry limit treated a client relaying others' states as malformed, so joining a room of about five or more could permanently disconnect a legitimate user. Every client also re-sent each state it received, so a busy room could trip the rate limit on innocent users | High, availability | Frames may now carry a full room's entries, entries a client does not own are ignored, and clients send only their own presence. `crowdedRoom.test.ts` covers it with 12 users |
 
 ## Accessibility
@@ -56,9 +58,17 @@ screen reader, and an automated scan catches only part of what a real audit woul
 
 ## Sandbox escape suite
 
-Not run. `services/executor/tests/security/test_attacks.py` holds 17 attacks and writes
-`sandbox-report.md` when run under Docker. There are no results to report, and the sandbox must be
-treated as unproven until there are.
+Passed on 2026-11-01 in GitHub Actions, on real Docker, with both runtimes. All 17 tests pass: 12
+attacks are contained, and 5 checks show that ordinary programs still work, with a compile error
+reported correctly. Full results: [gVisor](sandbox-report-runsc.md) and [runc](sandbox-report-runc.md).
+
+The first run failed 4 of 17. Two failures were real bugs (F5, F7), and two needed better attacks.
+The network attack was stopped by the time limit before it could report, and the `/proc` attack
+flagged the sandbox reading its own image variables. That attack now looks for worker secrets, and
+the test sets those secrets in the worker so that a leak would fail it. Fixing it then showed a real
+gap under gVisor (F6). Host access was blocked in every run, on both runtimes.
+
+Production uses gVisor. Under runc alone, a kernel bug would be enough to escape.
 
 ```sh
 cd services/executor

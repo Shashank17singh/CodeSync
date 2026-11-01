@@ -25,7 +25,7 @@ The server treats every client as hostile. Each document update is checked after
 
 Built as a final-year B.Tech CSE major project.
 
-> **Do not run untrusted code with this yet.** The sandbox attack suite has not been run. See the [security report](docs/security/report.md) for what is proven and what is not.
+> The sandbox attack suite passes under runc and gVisor, but CodeSync has not been run in production yet. See the [security report](docs/security/report.md) for what is proven and what is not.
 
 ---
 
@@ -262,7 +262,8 @@ One server runs everything except code execution, judging and AI review, which s
 
 ## Known Limitations
 
-- The sandbox attack suite, real Redis, the Docker images, Nginx and the GitHub Actions workflows have not been run yet.
+- The stack has not been started on a real server yet, so Nginx, HTTPS and the setup wizard are unproven. CI, including real Redis and the sandbox attack suite, passes.
+- Passing the attack suite shows those attacks are contained, not that no other attack works.
 - The AI review has only been measured with static analyzers alone: 48% recall and 86% precision. The model evaluation needs an API key.
 - A one-server deployment has no code execution, judging or AI review, because sandboxes must not share a machine with the database.
 - Blame does not credit deletions, and Yjs client ids are unsigned, so it shows who probably wrote a line. It is not evidence.
