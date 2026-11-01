@@ -23,8 +23,6 @@ CodeSync lets a group edit the same project at once in the browser. Edits merge 
 
 The server treats every client as hostile. Each document update is checked after it is applied and repaired if it breaks a rule, viewers cannot write, and user code runs in throwaway containers on a separate machine from the database.
 
-Built as a final-year B.Tech CSE major project.
-
 > The sandbox attack suite passes under runc and gVisor, but CodeSync has not been run in production yet. See the [security report](docs/security/report.md) for what is proven and what is not.
 
 ---
