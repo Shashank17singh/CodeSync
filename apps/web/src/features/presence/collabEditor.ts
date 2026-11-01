@@ -83,6 +83,30 @@ export interface CollabEditorOptions {
   container: HTMLElement
   session: CollabSession
   theme: 'vs' | 'vs-dark'
+  onRunKey?: (key: 'ctrl-enter' | 'f5') => void
+  onGlyphClick?: (line: number) => void
+  onFocus?: () => void
+}
+
+export interface EditorSettings {
+  fontSize: number
+  tabSize: number
+  wordWrap: boolean
+  readOnly: boolean
+}
+
+export interface LineMarker {
+  line: number
+  endLine?: number
+  kind: 'comment' | 'error' | 'warning' | 'info'
+  message?: string
+}
+
+export interface SelectionRange {
+  start: number
+  end: number
+  line: number
+  endLine: number
 }
 
 // Owns the Monaco instance. y-monaco's own cursor rendering is off, because it has no idea of
@@ -93,13 +117,22 @@ export class CollabEditor {
   private readonly models = new Map<string, monaco.editor.ITextModel>()
   private readonly cursors = new Map<number, RemoteCursor>()
   private readonly selections: monaco.editor.IEditorDecorationsCollection
+  private readonly markers: monaco.editor.IEditorDecorationsCollection
   private readonly disposables: monaco.IDisposable[] = []
   private binding: MonacoBinding | null = null
   private text: Y.Text | null = null
   private fileId: string | null = null
   private peers: readonly PresencePeer[] = []
+  private tabSize = 4
 
-  constructor({ container, session, theme }: CollabEditorOptions) {
+  constructor({
+    container,
+    session,
+    theme,
+    onRunKey,
+    onGlyphClick,
+    onFocus,
+  }: CollabEditorOptions) {
     installPresenceStyles()
     this.session = session
     this.editor = monaco.editor.create(container, {
@@ -108,8 +141,26 @@ export class CollabEditor {
       automaticLayout: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
+      glyphMargin: true,
     })
     this.selections = this.editor.createDecorationsCollection()
+    this.markers = this.editor.createDecorationsCollection()
+    if (onRunKey) {
+      const { KeyCode, KeyMod } = monaco
+      this.editor.addCommand(KeyMod.CtrlCmd | KeyCode.Enter, () => onRunKey('ctrl-enter'))
+      this.editor.addCommand(KeyCode.F5, () => onRunKey('f5'))
+    }
+    if (onGlyphClick) {
+      this.disposables.push(
+        this.editor.onMouseDown(({ target }) => {
+          const line = target.position?.lineNumber
+          if (line && target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
+            onGlyphClick(line)
+          }
+        }),
+      )
+    }
+    if (onFocus) this.disposables.push(this.editor.onDidFocusEditorText(onFocus))
     this.disposables.push(
       this.editor.onDidChangeCursorSelection((event) => this.publishCursor(event.selection)),
     )
@@ -145,6 +196,7 @@ export class CollabEditor {
     const model = monaco.editor.createModel('', LANGUAGE_BY_EXTENSION[extension] ?? 'plaintext')
     // Yjs offsets count one character per newline, which CRLF would break.
     model.setEOL(monaco.editor.EndOfLineSequence.LF)
+    model.updateOptions({ tabSize: this.tabSize })
     this.models.set(fileId, model)
     return model
   }
@@ -168,6 +220,50 @@ export class CollabEditor {
 
   focus(): void {
     this.editor.focus()
+  }
+
+  setTheme(theme: 'vs' | 'vs-dark'): void {
+    monaco.editor.setTheme(theme)
+  }
+
+  configure({ fontSize, tabSize, wordWrap, readOnly }: EditorSettings): void {
+    this.tabSize = tabSize
+    this.editor.updateOptions({ fontSize, readOnly, wordWrap: wordWrap ? 'on' : 'off' })
+    this.editor.getModel()?.updateOptions({ tabSize })
+  }
+
+  setMarkers(markers: readonly LineMarker[]): void {
+    this.markers.set(
+      markers.map(({ line, endLine, kind, message }) => ({
+        range: new monaco.Range(line, 1, endLine ?? line, 1),
+        options: {
+          isWholeLine: true,
+          // Plain text only: Monaco treats this as Markdown, and it comes from a model's reply.
+          ...(message ? { hoverMessage: { value: message.replace(/[\\`*_{}[\]()#+\-.!<>]/g, '\\$&') } } : {}),
+          ...(kind === 'comment'
+            ? { glyphMarginClassName: 'cs-glyph-comment' }
+            : { className: `cs-review-${kind}` }),
+        },
+      })),
+    )
+  }
+
+  revealLine(line: number): void {
+    this.editor.revealLineInCenter(line)
+    this.editor.setPosition({ lineNumber: line, column: 1 })
+    this.editor.focus()
+  }
+
+  selectionRange(): SelectionRange | null {
+    const model = this.editor.getModel()
+    const selection = this.editor.getSelection()
+    if (!model || !selection) return null
+    return {
+      start: model.getOffsetAt(selection.getStartPosition()),
+      end: model.getOffsetAt(selection.getEndPosition()),
+      line: selection.startLineNumber,
+      endLine: selection.endLineNumber,
+    }
   }
 
   reveal(fileId: string, cursor: PresenceCursor): void {

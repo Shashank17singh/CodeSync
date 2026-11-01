@@ -452,6 +452,22 @@ export function registerProblemRoutes(app: FastifyInstance, deps: AppDeps): void
     return reply.status(201).send({ problemSet })
   })
 
+  const displayNames = async (rows: Array<{ userId: string }>) => {
+    const users = await prisma.user.findMany({
+      where: { id: { in: rows.map((row) => row.userId) } },
+      select: { id: true, displayName: true },
+    })
+    return Object.fromEntries(users.map((user) => [user.id, user.displayName]))
+  }
+
+  app.get('/problem-sets', async () => ({
+    problemSets: await prisma.problemSet.findMany({
+      select: { id: true, title: true, _count: { select: { problems: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: PAGE_SIZE,
+    }),
+  }))
+
   app.get('/problem-sets/:id/leaderboard', async (request) => {
     const { id } = idParams.parse(request.params)
     const set = await prisma.problemSet.findUnique({
@@ -467,7 +483,8 @@ export function registerProblemRoutes(app: FastifyInstance, deps: AppDeps): void
       },
       select: { userId: true, problemId: true, verdict: true, createdAt: true },
     })
-    return { leaderboard: rankSubmissions(submissions, null) }
+    const leaderboard = rankSubmissions(submissions, null)
+    return { leaderboard, users: await displayNames(leaderboard) }
   })
 
   app.post('/rooms/:id/contests', async (request, reply) => {
@@ -481,9 +498,22 @@ export function registerProblemRoutes(app: FastifyInstance, deps: AppDeps): void
     return reply.status(201).send({ contest })
   })
 
+  app.get('/contests', async (request) => ({
+    contests: await prisma.contest.findMany({
+      where: { room: { members: { some: { userId: request.userId } } } },
+      orderBy: { startsAt: 'desc' },
+      take: PAGE_SIZE,
+    }),
+  }))
+
   app.get('/contests/:id', async (request) => {
     const { id } = idParams.parse(request.params)
-    const contest = await prisma.contest.findUnique({ where: { id } })
+    const contest = await prisma.contest.findUnique({
+      where: { id },
+      include: {
+        problemSet: { select: { problems: { select: { id: true, slug: true, title: true } } } },
+      },
+    })
     if (!contest) throw notFound('Contest')
     await requireRoom(prisma, contest.roomId, request.userId, 'file.read')
     return { contest }
@@ -507,7 +537,8 @@ export function registerProblemRoutes(app: FastifyInstance, deps: AppDeps): void
       },
       select: { userId: true, problemId: true, verdict: true, createdAt: true },
     })
-    return { frozen, leaderboard: rankSubmissions(submissions, contest.startsAt) }
+    const leaderboard = rankSubmissions(submissions, contest.startsAt)
+    return { frozen, leaderboard, users: await displayNames(leaderboard) }
   })
 
   app.post('/problems/:id/plagiarism', async (request) => {

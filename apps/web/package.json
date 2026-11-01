@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test"
@@ -13,11 +13,19 @@
   "dependencies": {
     "@codesync/collab-client": "workspace:*",
     "@codesync/shared": "workspace:*",
+    "@tanstack/react-query": "5.105.0",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/xterm": "6.0.0",
     "monaco-editor": "0.57.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "react-markdown": "10.1.0",
+    "react-resizable-panels": "4.15.3",
+    "react-router": "8.5.1",
+    "remark-gfm": "4.0.1",
     "y-monaco": "0.1.6",
-    "yjs": "13.6.33"
+    "yjs": "13.6.33",
+    "zustand": "5.0.16"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

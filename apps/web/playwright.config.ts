@@ -21,10 +21,21 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
+      command: 'corepack pnpm exec tsx test/e2eStack.ts',
+      cwd: '../api',
+      port: 4200,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
       command: 'corepack pnpm exec vite --host 127.0.0.1 --port 5199 --strictPort',
       url: 'http://127.0.0.1:5199/e2e/harness/index.html',
       reuseExistingServer: true,
       timeout: 120_000,
+      env: {
+        VITE_API_TARGET: 'http://127.0.0.1:4200',
+        VITE_COLLAB_TARGET: 'http://127.0.0.1:4201',
+      },
     },
   ],
 })

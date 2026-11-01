@@ -18,7 +18,7 @@ import { PresenceSidebar } from './PresenceSidebar'
 const NO_FOLLOW = (): null => null
 const NO_SUBSCRIPTION = (): (() => void) => () => undefined
 
-function useFileTree(session: CollabSession): ReadonlyMap<string, TreeEntry> {
+export function useFileTree(session: CollabSession): ReadonlyMap<string, TreeEntry> {
   const snapshot = useRef<ReadonlyMap<string, TreeEntry>>(new Map(session.tree.entries()))
   const subscribe = useCallback(
     (listener: () => void) => {
@@ -33,6 +33,21 @@ function useFileTree(session: CollabSession): ReadonlyMap<string, TreeEntry> {
     [session],
   )
   return useSyncExternalStore(subscribe, () => snapshot.current)
+}
+
+export function usePresenceActivity(session: CollabSession): void {
+  useEffect(() => {
+    const onActivity = (): void => session.presence.noteActivity()
+    const onVisibility = (): void => session.presence.setVisible(!document.hidden)
+    window.addEventListener('keydown', onActivity)
+    window.addEventListener('pointerdown', onActivity)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('keydown', onActivity)
+      window.removeEventListener('pointerdown', onActivity)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [session])
 }
 
 export interface PresenceWorkspaceProps {
@@ -95,18 +110,7 @@ export function PresenceWorkspace({ session, self, theme = 'vs' }: PresenceWorks
 
   useEffect(() => editor?.renderPeers(peers), [editor, peers])
 
-  useEffect(() => {
-    const onActivity = (): void => session.presence.noteActivity()
-    const onVisibility = (): void => session.presence.setVisible(!document.hidden)
-    window.addEventListener('keydown', onActivity)
-    window.addEventListener('pointerdown', onActivity)
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => {
-      window.removeEventListener('keydown', onActivity)
-      window.removeEventListener('pointerdown', onActivity)
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
-  }, [session])
+  usePresenceActivity(session)
 
   const files = useMemo(
     () =>

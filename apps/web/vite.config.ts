@@ -5,8 +5,17 @@ import { defineConfig } from 'vite'
 
 const fromRoot = (path: string): string => fileURLToPath(new URL(path, import.meta.url))
 
+const apiTarget = process.env['VITE_API_TARGET'] ?? 'http://127.0.0.1:3000'
+const collabTarget = process.env['VITE_COLLAB_TARGET'] ?? 'http://127.0.0.1:4000'
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': { target: apiTarget },
+      '/collab': { target: collabTarget, ws: true },
+    },
+  },
   resolve: {
     alias: [
       { find: '@codesync/shared', replacement: fromRoot('../../packages/shared/src/index.ts') },

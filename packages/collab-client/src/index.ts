@@ -43,6 +43,8 @@ export async function createCollabSession(options: CollabSessionOptions): Promis
     params: { token: await options.getToken() },
     ...(options.webSocket ? { WebSocketPolyfill: options.webSocket } : {}),
     disableBc: options.disableBroadcastChannel ?? false,
+    // y-websocket doubles its retry delay up to this ceiling.
+    maxBackoffTime: 15_000,
   })
 
   const channel = new AppChannel(provider)

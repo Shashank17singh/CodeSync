@@ -6,11 +6,10 @@ import { WebSocket } from 'ws'
 import * as Y from 'yjs'
 import { startCollabServer, type CollabServer } from '../../collab/src/server.js'
 import { MemoryHub } from '../../collab/src/storage/memory.js'
-import type { BridgeTransport } from '../src/collab/bridge.js'
 import { as, config, createRoomFixture, createTestApi, type RoomFixture, type TestApi } from './helpers.js'
+import { hubTransport } from './hubTransport.js'
 
 const ORIGIN = 'http://localhost:5173'
-const SENDER_BYTES = 16
 
 class OriginWebSocket extends WebSocket {
   constructor(url: string | URL, protocols?: string | string[]) {
@@ -23,24 +22,6 @@ async function waitFor(condition: () => boolean, timeoutMs = 5_000): Promise<voi
   while (!condition()) {
     if (Date.now() > deadline) throw new Error('condition not met before timeout')
     await new Promise((resolve) => setTimeout(resolve, 10))
-  }
-}
-
-// The real API and the real collab server, sharing one stand-in for Redis.
-function hubTransport(hub: MemoryHub): BridgeTransport {
-  const storage = hub.storage()
-  return {
-    readLog: (projectId) => storage.log.read(projectId),
-    append: async (projectId, update) => {
-      await storage.log.append(projectId, update)
-    },
-    deleteLog: async (projectId) => {
-      hub.updates.delete(projectId)
-    },
-    readState: async (projectId) => (await storage.docs.load(projectId)).state,
-    publish: (channel, payload) => storage.bus.publish(channel, payload.subarray(SENDER_BYTES)),
-    acquire: (name, ttlMs) => storage.locks.acquire(name, ttlMs),
-    release: (name, token) => storage.locks.release(name, token),
   }
 }
 
