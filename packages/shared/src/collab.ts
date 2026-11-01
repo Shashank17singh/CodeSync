@@ -6,6 +6,9 @@ export const COLLAB_LIMITS = {
   maxFrameBytes: 4 * 1024 * 1024,
   maxAwarenessStateBytes: 4 * 1024,
   maxAwarenessClientsPerConnection: 4,
+  // A client can relay everyone in the room at once, so this must fit a full room. Entries it
+  // does not own are ignored, one by one, when the frame is handled.
+  maxAwarenessEntriesPerFrame: 200,
   maxYjsClientsPerConnection: 64,
   maxPendingUpdateBytes: 1024 * 1024,
   maxBufferedBytes: 16 * 1024 * 1024,

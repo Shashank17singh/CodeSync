@@ -58,7 +58,7 @@ export interface AwarenessEntry {
 export function decodeAwarenessUpdate(update: Uint8Array): AwarenessEntry[] {
   const decoder = decoding.createDecoder(update)
   const count = decoding.readVarUint(decoder)
-  if (count > COLLAB_LIMITS.maxAwarenessClientsPerConnection) {
+  if (count > COLLAB_LIMITS.maxAwarenessEntriesPerFrame) {
     throw new ProtocolError(4400, 'too many awareness entries')
   }
   const entries: AwarenessEntry[] = []

@@ -47,6 +47,14 @@ export async function createCollabSession(options: CollabSessionOptions): Promis
     maxBackoffTime: 15_000,
   })
 
+  // y-websocket re-sends every presence state it receives. With n people, one cursor move would
+  // cost n messages, and a busy room would trip the server's rate limit on innocent users.
+  const sendOwnPresence: typeof provider._awarenessUpdateHandler = (changes, origin) => {
+    if (origin !== provider) provider._awarenessUpdateHandler(changes, origin)
+  }
+  provider.awareness.off('update', provider._awarenessUpdateHandler)
+  provider.awareness.on('update', sendOwnPresence)
+
   const channel = new AppChannel(provider)
   const presence = new PresenceTracker(provider.awareness)
   presence.start()
@@ -81,6 +89,7 @@ export async function createCollabSession(options: CollabSessionOptions): Promis
     tree: doc.getMap(YDOC_ROOTS.tree),
     destroy: async () => {
       presence.destroy()
+      provider.awareness.off('update', sendOwnPresence)
       provider.destroy()
       await offline?.destroy()
       doc.destroy()

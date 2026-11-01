@@ -396,6 +396,8 @@ describe('rate limits', () => {
     const email = await createVerifiedUser(api)
     const codes = await attempts(4, () => post(api, '/auth/password/forgot', { email }))
     expect(codes).toEqual([202, 202, 202, 429])
+    await waitForEmail(api.mailer.resets, 3)
+    // Mail is sent in the background, so give a wrongly sent fourth one time to arrive.
     await new Promise((resolve) => setTimeout(resolve, 50))
     expect(api.mailer.resets).toHaveLength(3)
   })

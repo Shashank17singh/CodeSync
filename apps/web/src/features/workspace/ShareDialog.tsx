@@ -24,13 +24,14 @@ export function ShareDialog({ roomId, profanityFilter, open, onClose }: ShareDia
       }),
     onSuccess: () => setCopied(false),
   })
+  // Held here so the box changes on the click itself. The saved value takes over if saving fails.
+  const [filterChoice, setFilterChoice] = useState<boolean | null>(null)
   const moderation = useMutation({
     mutationFn: (enabled: boolean) =>
       api(`/rooms/${roomId}`, { method: 'PATCH', body: { profanityFilter: enabled } }),
     onSuccess: () => client.invalidateQueries({ queryKey: ['room', roomId] }),
+    onError: () => setFilterChoice(null),
   })
-  // Shows the choice at once. The saved value takes over if the save fails.
-  const filterOn = moderation.isError ? profanityFilter : (moderation.variables ?? profanityFilter)
   const submit = (event: FormEvent): void => {
     event.preventDefault()
     invite.mutate()
@@ -46,9 +47,11 @@ export function ShareDialog({ roomId, profanityFilter, open, onClose }: ShareDia
       <label className="flex items-center gap-2 text-sm font-medium">
         <input
           type="checkbox"
-          checked={filterOn}
-          disabled={moderation.isPending}
-          onChange={(event) => moderation.mutate(event.target.checked)}
+          checked={filterChoice ?? profanityFilter}
+          onChange={(event) => {
+            setFilterChoice(event.target.checked)
+            moderation.mutate(event.target.checked)
+          }}
         />
         Filter profanity in chat
       </label>

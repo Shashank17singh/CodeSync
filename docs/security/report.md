@@ -36,6 +36,7 @@ on that date. "Configured" means the setting exists but nothing has exercised it
 | F1 | `pnpm audit` found five advisories in DOMPurify 3.4.15, pulled in by Monaco: one critical, one high, three low | Critical as reported. Monaco's actual use of the affected options was not assessed | Forced 3.4.17 with a pnpm override. Audit is now clean |
 | F2 | Comments had no rate limit, though viewers can post them and each one fans out to the room | Medium | 30 a minute per user, with a test |
 | F3 | Review findings reached Monaco hover text, which it treats as Markdown | Low | Markdown characters are escaped before display |
+| F4 | Found by the first Linux CI run. The presence-entry limit treated a client relaying others' states as malformed, so joining a room of about five or more could permanently disconnect a legitimate user. Every client also re-sent each state it received, so a busy room could trip the rate limit on innocent users | High, availability | Frames may now carry a full room's entries, entries a client does not own are ignored, and clients send only their own presence. `crowdedRoom.test.ts` covers it with 12 users |
 
 ## Accessibility
 
