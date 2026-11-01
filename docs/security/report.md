@@ -25,7 +25,7 @@ on that date. "Configured" means the setting exists but nothing has exercised it
 | A06 Vulnerable components | Exact dependency versions, frozen lockfile, `pnpm audit --prod` in CI. | Audit reports no known vulnerabilities after finding F1 | Tested |
 | A07 Authentication failures | 15-minute JWT, rotating refresh tokens with reuse detection, PKCE, identical signup replies for taken addresses, a decoy hash on unknown accounts. | `auth`, `oauth`, `sessions` tests | Tested |
 | A08 Integrity failures | Sandbox images pinned by digest. Refresh is single-flight across tabs. Hostile Yjs updates are repaired after applying. | `security` tests, `api.test.ts` | Tested |
-| A09 Logging failures | Structured logs with pino and structlog. Request logging is off for token-bearing paths, and Nginx does not log `/collab/`. Link tokens sit in URL fragments. | Reviewed by reading the code | Reviewed |
+| A09 Logging failures | Structured logs with pino and structlog. Automatic request logging is off in the API, and Nginx does not log `/collab/`, where the token is in the URL. Link tokens sit in URL fragments. | Reviewed by reading the code | Reviewed |
 | A10 SSRF | The API fetches no user-supplied URL. OAuth endpoints are fixed. `avatarUrl` must be https and only the browser loads it. | Reviewed by reading the code | Reviewed |
 
 ### Findings and fixes
