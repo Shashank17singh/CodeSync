@@ -63,6 +63,9 @@ Every setting is in `src/executor/container_spec.py` so that it can be reviewed 
 | Core dumps, open files | 0, 256 | Disk filling, descriptor exhaustion |
 | Daemon logs | Off | Filling the host's disk through container logs |
 
+Register gVisor with `sudo runsc install -- --oci-seccomp`. Without that flag it ignores Docker's
+seccomp profile, and programs can create user namespaces inside the sandbox.
+
 Set `SANDBOX_REQUIRE_GVISOR=true` in production, so a host without gVisor refuses to start instead
 of quietly running on a weaker boundary.
 

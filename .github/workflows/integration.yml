@@ -77,7 +77,10 @@ jobs:
           echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main" | sudo tee /etc/apt/sources.list.d/gvisor.list
           sudo apt-get update
           sudo apt-get install -y runsc
-          sudo runsc install
+          runsc --version
+          runsc flags | grep -i seccomp
+          # Docker's seccomp profile is ignored inside gVisor unless this flag is set.
+          sudo runsc install -- --oci-seccomp
           sudo systemctl restart docker
       - run: pip install -e '.[dev]'
       - run: ruff check src tests

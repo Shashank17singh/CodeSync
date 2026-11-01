@@ -1,7 +1,7 @@
 # Runs on a separate machine. Never run sandboxes beside the database in production: a container
 # escape here should reach nothing but this disposable host.
 #
-# This host needs Docker with gVisor installed (runsc), and the images from
+# This host needs Docker with gVisor installed (`runsc install -- --oci-seccomp`), and the images from
 # services/executor/build-images.sh. It holds only REDIS_URL, API_URL and the service token.
 # API_URL is http://<application private IP>:3000, because Nginx blocks worker callbacks.
 name: codesync-executor

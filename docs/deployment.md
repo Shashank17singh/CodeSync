@@ -89,7 +89,9 @@ ssh -L 3001:127.0.0.1:3001 user@your-server
 
 Only do this after the Integration workflow's attack suite has passed under gVisor.
 
-1. Get a second server on the same private network, with Docker and gVisor (`runsc`).
+1. Get a second server on the same private network, with Docker and a recent gVisor (`runsc`).
+   Register it with `sudo runsc install -- --oci-seccomp`, then restart Docker. Without that flag,
+   gVisor ignores Docker's seccomp profile and programs can create user namespaces.
 2. On it, clone the repository, run `services/executor/build-images.sh`, and start the worker:
 
    ```sh
