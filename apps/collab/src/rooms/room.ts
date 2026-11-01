@@ -52,6 +52,7 @@ export interface RoomOptions {
   storage: Storage
   logger: Logger
   compactionIntervalMs: number
+  snapshotIntervalMs: number
   maxPendingUpdates: number
 }
 
@@ -71,10 +72,12 @@ export class Room {
   private canonicalTree = new Map<string, TreeEntry>()
   private unsubscribers: Array<() => Promise<void>> = []
   private timer: NodeJS.Timeout | undefined
+  private snapshotTimer: NodeJS.Timeout | undefined
   private appends: Promise<void> = Promise.resolve()
   private compacting: Promise<boolean> | null = null
   private appendFailed = false
   private dirty = false
+  private editedSinceSnapshot = false
   private locked = false
   private deleted = false
 
@@ -98,6 +101,8 @@ export class Room {
       await room.reconcileTree()
       room.timer = setInterval(() => void room.tick(), options.compactionIntervalMs)
       room.timer.unref()
+      room.snapshotTimer = setInterval(() => void room.snapshot(), options.snapshotIntervalMs)
+      room.snapshotTimer.unref()
       return room
     } catch (error) {
       await room.destroy()
@@ -229,6 +234,7 @@ export class Room {
 
   private readonly onDocUpdate = (update: Uint8Array, origin: unknown): void => {
     this.dirty = true
+    if (origin instanceof Connection || origin === REMOTE_ORIGIN) this.editedSinceSnapshot = true
     const frame = encodeSyncUpdate(update)
     for (const connection of this.connections) {
       if (connection !== origin) connection.send(frame)
@@ -644,8 +650,29 @@ export class Room {
     return saved === null && !hadFailedAppends
   }
 
+  // The lock is left to expire: it is what limits a room open on several instances to one
+  // snapshot per interval. The last snapshot of a closing room skips it, or the edits since the
+  // previous snapshot would have no history entry.
+  private async snapshot(closing = false): Promise<void> {
+    if (!this.editedSinceSnapshot || this.deleted) return
+    try {
+      const ttlMs = Math.floor(this.options.snapshotIntervalMs * 0.9)
+      if (!closing) {
+        const token = await this.storage.locks.acquire(collabKeys.snapshot(this.projectId), ttlMs)
+        if (!token) return
+      }
+      this.editedSinceSnapshot = false
+      await this.storage.snapshots.capture(this.projectId, Y.encodeStateAsUpdate(this.doc))
+    } catch (error) {
+      this.editedSinceSnapshot = true
+      this.logger.error({ err: error }, 'failed to take a snapshot')
+    }
+  }
+
   async destroy(): Promise<void> {
     clearInterval(this.timer)
+    clearInterval(this.snapshotTimer)
+    await this.snapshot(true)
     await Promise.allSettled(this.unsubscribers.map((unsubscribe) => unsubscribe()))
     this.doc.off('afterTransaction', this.guardTransaction)
     this.doc.off('update', this.onDocUpdate)

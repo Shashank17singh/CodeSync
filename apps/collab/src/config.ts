@@ -1,4 +1,4 @@
-import { COMPACTION } from '@codesync/shared'
+import { COMPACTION, SNAPSHOTS } from '@codesync/shared'
 import { z } from 'zod'
 
 const envSchema = z.object({
@@ -14,6 +14,7 @@ export interface ServerConfig {
   tokenSecret: string
   allowedOrigins: ReadonlySet<string>
   compactionIntervalMs: number
+  snapshotIntervalMs: number
   maxPendingUpdates: number
 }
 
@@ -34,6 +35,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     allowedOrigins: new Set(parsed.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())),
     logLevel: parsed.LOG_LEVEL,
     compactionIntervalMs: COMPACTION.intervalMs,
+    snapshotIntervalMs: SNAPSHOTS.intervalMs,
     maxPendingUpdates: COMPACTION.maxPendingUpdates,
   }
 }

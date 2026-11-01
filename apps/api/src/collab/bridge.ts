@@ -7,6 +7,7 @@ import {
   type RoomControl,
 } from '@codesync/shared'
 import type { FastifyBaseLogger } from 'fastify'
+import { simpleDiffString } from 'lib0/diff'
 import * as Y from 'yjs'
 import { ApiError } from '../lib/errors.js'
 
@@ -95,6 +96,49 @@ export class CollabBridge {
         contents.set(id, text.toString())
       })
       return contents
+    } finally {
+      doc.destroy()
+    }
+  }
+
+  async encodeState(projectId: string): Promise<Uint8Array> {
+    const doc = await this.loadDoc(projectId)
+    try {
+      return Y.encodeStateAsUpdate(doc)
+    } finally {
+      doc.destroy()
+    }
+  }
+
+  // Must run inside withTreeLock. Only the changed span is rewritten, so anchors and cursors
+  // outside it survive. Returns the Yjs client that made the edit, or null if nothing changed.
+  async writeFiles(projectId: string, files: SeedFile[]): Promise<number | null> {
+    const doc = await this.loadDoc(projectId)
+    try {
+      const before = Y.encodeStateVector(doc)
+      const map = doc.getMap<Y.Text>(YDOC_ROOTS.files)
+      let changed = false
+      doc.transact(() => {
+        for (const { id, content } of files) {
+          const text = map.get(id)
+          if (!text) {
+            map.set(id, new Y.Text(content))
+            changed = true
+            continue
+          }
+          const current = text.toString()
+          if (current === content) continue
+          const { index, remove, insert } = simpleDiffString(current, content)
+          if (remove > 0) text.delete(index, remove)
+          if (insert.length > 0) text.insert(index, insert)
+          changed = true
+        }
+      })
+      if (!changed) return null
+      const update = Y.encodeStateAsUpdate(doc, before)
+      await this.transport.append(projectId, update)
+      await this.transport.publish(collabKeys.sync(projectId), this.frame(update))
+      return doc.clientID
     } finally {
       doc.destroy()
     }

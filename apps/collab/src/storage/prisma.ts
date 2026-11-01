@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@codesync/db'
+import { captureSnapshot, type PrismaClient } from '@codesync/db'
 import { maskProfanity } from '@codesync/shared'
 import type {
   Catalog,
@@ -7,6 +7,7 @@ import type {
   ChatStore,
   DocStore,
   RoomAccess,
+  SnapshotStore,
   StoredChatMessage,
   StoredDoc,
 } from './types.js'
@@ -68,6 +69,14 @@ export class PrismaChat implements ChatStore {
       )
       return { ...message, mentionedUserIds, notifications }
     })
+  }
+}
+
+export class PrismaSnapshots implements SnapshotStore {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async capture(projectId: string, state: Uint8Array): Promise<void> {
+    await captureSnapshot(this.prisma, { projectId, kind: 'AUTO', state })
   }
 }
 

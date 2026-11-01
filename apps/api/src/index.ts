@@ -1,5 +1,5 @@
-import { createPrismaClient } from '@codesync/db'
-import { EXECUTION_QUEUES } from '@codesync/shared'
+import { createPrismaClient, pruneSnapshots } from '@codesync/db'
+import { EXECUTION_QUEUES, SNAPSHOTS } from '@codesync/shared'
 import { Redis } from 'ioredis'
 import pino from 'pino'
 import { buildApp } from './app.js'
@@ -43,6 +43,14 @@ const judgeFailures = watchQueueFailures(EXECUTION_QUEUES.judge, config.redisUrl
   }),
 )
 
+const DAY_MS = 24 * 60 * 60 * 1000
+const pruner = setInterval(() => {
+  pruneSnapshots(prisma, new Date(Date.now() - SNAPSHOTS.retentionDays * DAY_MS)).catch(
+    (error: unknown) => logger.error({ err: error }, 'failed to prune snapshots'),
+  )
+}, SNAPSHOTS.pruneIntervalMs)
+pruner.unref()
+
 const app = buildApp({
   prisma,
   config,
@@ -58,6 +66,7 @@ await app.listen({ port: config.port, host: '0.0.0.0' })
 
 const shutdown = (signal: string): void => {
   logger.info({ signal }, 'shutting down')
+  clearInterval(pruner)
   app
     .close()
     .then(() => Promise.all([runFailures.close(), judgeFailures.close(), queue.close()]))

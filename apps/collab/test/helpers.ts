@@ -35,6 +35,7 @@ export interface Harness {
 
 interface ServerTuning {
   compactionIntervalMs: number
+  snapshotIntervalMs: number
   maxPendingUpdates: number
 }
 
@@ -63,6 +64,7 @@ export function createHarness(): Harness {
           tokenSecret: SECRET,
           allowedOrigins: new Set([ORIGIN]),
           compactionIntervalMs: overrides.compactionIntervalMs ?? 60_000,
+          snapshotIntervalMs: overrides.snapshotIntervalMs ?? 300_000,
           maxPendingUpdates: overrides.maxPendingUpdates ?? 500,
         },
       })

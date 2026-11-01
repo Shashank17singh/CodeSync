@@ -286,6 +286,7 @@ model Snapshot {
   kind        SnapshotKind
   label       String?      @db.VarChar(120)
   state       Bytes
+  tree        Json         @default("[]")
   authorIds   String[]     @db.Uuid
   createdById String?      @db.Uuid
   createdAt   DateTime     @default(now())

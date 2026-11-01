@@ -77,17 +77,20 @@ Details are in [auth.md](auth.md).
 | GET | `/rooms/:id/executions` | Run history | Viewer+ | Built |
 | GET | `/executions/:id` | Run result | Viewer+ | Built |
 
-## History (3.10)
+## History
 
 | Method | Path | Purpose | Access | Status |
 | --- | --- | --- | --- | --- |
-| GET | `/projects/:id/snapshots` | Snapshot timeline | Viewer+ | Planned |
-| POST | `/projects/:id/snapshots` | Named checkpoint | Editor+ | Planned |
-| GET | `/snapshots/:id/files/:fileId` | Read a file at a snapshot | Viewer+ | Planned |
-| POST | `/snapshots/:id/restore` | Restore project or `{ fileId }` as a new edit | Editor+ | Planned |
-| GET | `/snapshots/:id/export` | Download snapshot zip | Viewer+ | Planned |
-| POST | `/snapshots/:id/github` | Push to GitHub (stretch goal) | Editor+ | Planned |
-| GET | `/projects/:id/files/:fileId/blame` | Line attribution | Viewer+ | Planned |
+| GET | `/projects/:id/snapshots` | Snapshot timeline | Viewer+ | Built |
+| POST | `/projects/:id/snapshots` | Named checkpoint | Editor+ | Built |
+| GET | `/snapshots/:id` | Snapshot details and file list | Viewer+ | Built |
+| GET | `/snapshots/:id/files/:fileId` | Read a file at a snapshot | Viewer+ | Built |
+| GET | `/snapshots/:id/files/:fileId/blame` | Blame at a snapshot | Viewer+ | Built |
+| GET | `/files/:id/blame` | Blame of the live file | Viewer+ | Built |
+| POST | `/snapshots/:id/restore` | Restore project or `{ fileId }` as a new edit | Editor+ | Built |
+| GET | `/snapshots/:id/export` | Download snapshot zip | Viewer+ | Built |
+| POST | `/snapshots/:id/github` | Push to GitHub (stretch goal) | Editor+ | Not built |
+| GET | `/projects/:id/files/:fileId/blame` | Line attribution | Viewer+ | Built |
 
 ## Chat and comments
 

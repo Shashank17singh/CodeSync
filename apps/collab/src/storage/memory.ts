@@ -10,6 +10,7 @@ import type {
   Locks,
   RoomAccess,
   Slots,
+  SnapshotStore,
   Storage,
   StoredChatMessage,
   StoredDoc,
@@ -27,6 +28,7 @@ export class MemoryHub {
   readonly slots = new Map<string, Map<string, number>>()
   readonly listeners = new Map<string, Set<(payload: Uint8Array) => void>>()
   readonly messages: Array<StoredChatMessage & { roomId: string }> = []
+  readonly snapshots: Array<{ projectId: string; state: Uint8Array }> = []
   profanityFilter = false
 
   setAccess(userId: string, access: RoomAccess): void {
@@ -42,6 +44,7 @@ export class MemoryHub {
       docs: new MemoryDocStore(this),
       catalog: new MemoryCatalog(this),
       chat: new MemoryChat(this),
+      snapshots: new MemorySnapshots(this),
     }
   }
 }
@@ -170,6 +173,14 @@ class MemoryChat implements ChatStore {
     }
     this.hub.messages.push(message)
     return message
+  }
+}
+
+class MemorySnapshots implements SnapshotStore {
+  constructor(private readonly hub: MemoryHub) {}
+
+  async capture(projectId: string, state: Uint8Array): Promise<void> {
+    this.hub.snapshots.push({ projectId, state })
   }
 }
 

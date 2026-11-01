@@ -3,7 +3,7 @@ import { Redis } from 'ioredis'
 import pino from 'pino'
 import { loadConfig } from './config.js'
 import { startCollabServer } from './server.js'
-import { PrismaCatalog, PrismaChat, PrismaDocStore } from './storage/prisma.js'
+import { PrismaCatalog, PrismaChat, PrismaDocStore, PrismaSnapshots } from './storage/prisma.js'
 import { RedisBus, RedisLocks, RedisSlots, RedisUpdateLog } from './storage/redis.js'
 
 const config = loadConfig(process.env)
@@ -28,6 +28,7 @@ const server = await startCollabServer({
     docs: new PrismaDocStore(prisma),
     catalog: new PrismaCatalog(prisma),
     chat: new PrismaChat(prisma),
+    snapshots: new PrismaSnapshots(prisma),
   },
 })
 

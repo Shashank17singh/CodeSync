@@ -71,6 +71,7 @@ describe('API and collab server together', () => {
         tokenSecret: config.collabTokenSecret,
         allowedOrigins: new Set([ORIGIN]),
         compactionIntervalMs: 60_000,
+        snapshotIntervalMs: 300_000,
         maxPendingUpdates: 500,
       },
     })
@@ -117,6 +118,51 @@ describe('API and collab server together', () => {
     const session = await connect()
     await waitFor(() => text(session, fixture.fileId).startsWith('print('))
     expect(session.tree.get(fixture.fileId)?.path).toBe('main.py')
+  })
+
+  it('syncs a restore to a connected editor, including a file deleted since', async () => {
+    fixture = await createRoomFixture(api)
+    const session = await connect()
+    await waitFor(() => text(session, fixture.fileId).startsWith('print('))
+    const added = await api.app.inject(
+      as(fixture.owner, {
+        method: 'POST',
+        url: `/projects/${fixture.projectId}/files`,
+        payload: { path: 'extra.py', content: 'extra' },
+      }),
+    )
+    const extraId = added.json<{ file: { id: string } }>().file.id
+    await waitFor(() => text(session, extraId) === 'extra')
+    const original = text(session, fixture.fileId)
+
+    const checkpoint = await api.app.inject(
+      as(fixture.owner, {
+        method: 'POST',
+        url: `/projects/${fixture.projectId}/snapshots`,
+        payload: { label: 'good state' },
+      }),
+    )
+    const snapshotId = checkpoint.json<{ snapshot: { id: string } }>().snapshot.id
+
+    const logged = hub.updates.get(fixture.projectId)?.length ?? 0
+    ;(session.files.get(fixture.fileId) as Y.Text).insert(0, '# broken\n')
+    await waitFor(() => (hub.updates.get(fixture.projectId)?.length ?? 0) > logged)
+    await api.app.inject(
+      as(fixture.owner, {
+        method: 'DELETE',
+        url: `/projects/${fixture.projectId}/files/${extraId}`,
+      }),
+    )
+    await waitFor(() => !session.tree.has(extraId))
+
+    const restored = await api.app.inject(
+      as(fixture.owner, { method: 'POST', url: `/snapshots/${snapshotId}/restore` }),
+    )
+    expect(restored.statusCode).toBe(200)
+
+    await waitFor(() => text(session, fixture.fileId) === original)
+    await waitFor(() => session.tree.get(extraId)?.path === 'extra.py')
+    await waitFor(() => text(session, extraId) === 'extra')
   })
 
   it('delivers a file created through the API to a connected client with its content', async () => {

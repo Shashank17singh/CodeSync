@@ -16,6 +16,7 @@ import { registerAuthRoutes } from './modules/auth/routes.js'
 import { ACCESS_TOKEN_AUDIENCE, SessionService } from './modules/auth/sessions.js'
 import { registerChatRoutes } from './modules/chat.js'
 import { registerExecutionRoutes } from './modules/executions.js'
+import { registerHistoryRoutes } from './modules/history.js'
 import { registerFileRoutes } from './modules/files.js'
 import { registerInviteRoutes } from './modules/invites.js'
 import { registerProblemRoutes } from './modules/problems.js'
@@ -153,6 +154,7 @@ export function buildApp(services: AppServices): FastifyInstance {
       registerProblemRoutes(api, deps)
       registerReviewRoutes(api, deps)
       registerChatRoutes(api, deps)
+      registerHistoryRoutes(api, deps)
     },
     { prefix: '/api/v1' },
   )

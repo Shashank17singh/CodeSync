@@ -18,6 +18,7 @@
     "bullmq": "6.5.3",
     "fastify": "5.12.7",
     "fflate": "0.8.3",
+    "lib0": "0.2.119",
     "ioredis": "6.0.0",
     "jsonwebtoken": "9.0.3",
     "nodemailer": "10.3.1",

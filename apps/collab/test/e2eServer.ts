@@ -22,6 +22,7 @@ await startCollabServer({
     tokenSecret: process.env['E2E_TOKEN_SECRET'] ?? 'e2e-secret-with-at-least-32-characters',
     allowedOrigins: new Set([origin]),
     compactionIntervalMs: 30_000,
+    snapshotIntervalMs: 300_000,
     maxPendingUpdates: 500,
   },
 })

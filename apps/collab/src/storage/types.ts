@@ -71,6 +71,10 @@ export interface ChatStore {
   post(message: ChatPost): Promise<StoredChatMessage>
 }
 
+export interface SnapshotStore {
+  capture(projectId: string, state: Uint8Array): Promise<void>
+}
+
 export interface Storage {
   log: UpdateLog
   locks: Locks
@@ -79,6 +83,7 @@ export interface Storage {
   docs: DocStore
   catalog: Catalog
   chat: ChatStore
+  snapshots: SnapshotStore
 }
 
 export const channels = {

@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
-import type { PrismaClient } from '@codesync/db'
+import { captureSnapshot, type PrismaClient } from '@codesync/db'
 import { EXECUTION_LIMITS } from '@codesync/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
@@ -283,6 +283,19 @@ export function registerExecutionRoutes(app: FastifyInstance, deps: AppDeps): vo
         finishedAt: new Date(),
       },
     })
+    if (updated.count === 1 && result.status === 'OK') {
+      // History is a side effect here, so a failure must not make the worker report again.
+      try {
+        const { projectId, userId } = await prisma.execution.findUniqueOrThrow({
+          where: { id },
+          select: { projectId: true, userId: true },
+        })
+        const state = await bridge.encodeState(projectId)
+        await captureSnapshot(prisma, { projectId, kind: 'RUN', state, createdById: userId })
+      } catch (error) {
+        request.log.error({ err: error, executionId: id }, 'failed to snapshot a run')
+      }
+    }
     return { recorded: updated.count === 1 }
   })
 }

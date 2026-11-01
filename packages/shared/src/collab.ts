@@ -18,6 +18,15 @@ export const COLLAB_LIMITS = {
   awarenessBurst: 40,
 } as const
 
+export const SNAPSHOTS = {
+  intervalMs: 5 * 60_000,
+  retentionDays: 30,
+  pruneIntervalMs: 6 * 60 * 60_000,
+  pageSize: 50,
+  maxManualPerProject: 200,
+  writesPerUserPerMinute: 10,
+} as const
+
 export const COMPACTION = {
   intervalMs: 30_000,
   maxPendingUpdates: 500,
@@ -95,6 +104,7 @@ export const collabKeys = {
   events: (roomId: string): string => `room:${roomId}:events`,
   lock: (name: string): string => `lock:${name}`,
   treeLock: (projectId: string): string => `tree:${projectId}`,
+  snapshot: (projectId: string): string => `snapshot:${projectId}`,
 }
 
 // Every pub/sub payload starts with the sender's id, so a sender can skip its own messages.
@@ -148,6 +158,13 @@ export const roomEventSchema = z.discriminatedUnion('type', [
     createdAt: z.string(),
   }),
   z.object({ type: z.literal('chat.deleted'), id: z.uuid() }),
+  z.object({
+    type: z.literal('history.changed'),
+    projectId: z.uuid(),
+    snapshotId: z.uuid(),
+    action: z.enum(['checkpoint', 'restored']),
+    userId: z.uuid(),
+  }),
   z.object({
     type: z.literal('chat.typing'),
     userId: z.uuid(),

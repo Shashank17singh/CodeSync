@@ -34,6 +34,7 @@ export class RoomManager {
           storage: this.storage,
           logger: this.logger,
           compactionIntervalMs: this.config.compactionIntervalMs,
+          snapshotIntervalMs: this.config.snapshotIntervalMs,
           maxPendingUpdates: this.config.maxPendingUpdates,
         }),
       }
