@@ -34,6 +34,8 @@ export function EditorPane({
   const fontSize = usePreferences((state) => state.fontSize)
   const tabSize = usePreferences((state) => state.tabSize)
   const wordWrap = usePreferences((state) => state.wordWrap)
+  const keybindings = usePreferences((state) => state.keybindings)
+  const vimStatus = useRef<HTMLDivElement>(null)
   const handlers = useRef({ onRunKey, onGlyphClick, onFocus })
   handlers.current = { onRunKey, onGlyphClick, onFocus }
 
@@ -71,13 +73,28 @@ export function EditorPane({
   useEffect(() => {
     if (fileId) editor?.openFile(fileId)
   }, [editor, fileId])
+  useEffect(() => {
+    editor?.setKeybindings(keybindings, vimStatus.current).catch((error: unknown) => {
+      console.error('failed to load editor keys', error)
+    })
+  }, [editor, keybindings])
   useEffect(() => editor?.renderPeers(peers), [editor, peers])
   useEffect(() => editor?.setMarkers(markers), [editor, markers, fileId])
 
   return (
     <div className="relative h-full min-h-0 min-w-0">
       {/* Monaco renders nothing until a model is set, so the hint fills the empty state. */}
-      <div ref={container} data-testid="editor" className="absolute inset-0" />
+      <div
+        ref={container}
+        data-testid="editor"
+        className={`absolute inset-x-0 top-0 ${keybindings === 'vim' ? 'bottom-5' : 'bottom-0'}`}
+      />
+      <div
+        ref={vimStatus}
+        data-testid="vim-status"
+        className="absolute inset-x-0 bottom-0 h-5 overflow-hidden px-2 font-mono text-xs text-muted"
+        hidden={keybindings !== 'vim'}
+      />
       {!fileId && (
         <p
           role={loadFailed ? 'alert' : 'status'}

@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test'
 
 const PASSWORD = 'correct horse battery'
@@ -192,6 +193,102 @@ test.describe('the workspace in two browsers', () => {
     await expect(files.getByRole('button', { name: 'renamed.py', exact: true })).toHaveCount(0)
   })
 
+  test('dragging a file into a folder moves it for everyone', async ({ browser }) => {
+    room = await shareRoom(browser, 'Drag session')
+    const { alice, bob } = room
+    const tree = alice.getByRole('navigation', { name: 'Files' })
+    await alice.getByRole('button', { name: 'New folder' }).click()
+    await alice.getByRole('dialog').getByLabel('Name').fill('src')
+    await alice.getByRole('button', { name: 'Save' }).click()
+    await alice.getByRole('button', { name: 'New file' }).click()
+    await alice.getByRole('dialog').getByLabel('Name').fill('moved.py')
+    await alice.getByRole('button', { name: 'Save' }).click()
+    await tree.getByText('moved.py').dragTo(tree.getByText('src', { exact: true }))
+    const actions = bob.getByRole('button', { name: 'Actions for src/moved.py' })
+    await expect(actions).toHaveCount(1)
+  })
+
+  test('a file can be moved with the keyboard alone', async ({ browser }) => {
+    room = await shareRoom(browser, 'Keyboard session')
+    const { alice, bob } = room
+    await alice.getByRole('button', { name: 'Actions for main.py' }).focus()
+    await alice.keyboard.press('Enter')
+    await expect(alice.getByRole('menuitem', { name: 'New file here' })).toBeFocused()
+    await alice.keyboard.press('ArrowDown')
+    await alice.keyboard.press('ArrowDown')
+    await expect(alice.getByRole('menuitem', { name: 'Move' })).toBeFocused()
+    await alice.keyboard.press('Enter')
+    await alice.getByRole('dialog').getByLabel('New path').fill('app/main.py')
+    await alice.keyboard.press('Enter')
+    await expect(bob.getByRole('button', { name: 'Actions for app/main.py' })).toHaveCount(1)
+  })
+
+  test('the side panel works with arrow keys, and Escape closes the file menu', async ({
+    browser,
+  }) => {
+    room = await shareRoom(browser, 'Tabs session')
+    const { alice } = room
+    await alice.getByRole('tab', { name: 'Users' }).focus()
+    await alice.keyboard.press('ArrowRight')
+    await expect(alice.getByRole('tab', { name: 'Chat' })).toBeFocused()
+    await expect(alice.getByRole('tab', { name: 'Chat' })).toHaveAttribute('aria-selected', 'true')
+    await alice.keyboard.press('ArrowLeft')
+    await expect(alice.getByRole('tab', { name: 'Users' })).toBeFocused()
+
+    const actions = alice.getByRole('button', { name: 'Actions for main.py' })
+    await actions.focus()
+    await alice.keyboard.press('Enter')
+    await alice.keyboard.press('Escape')
+    await expect(alice.getByRole('menu')).toHaveCount(0)
+    await expect(actions).toBeFocused()
+  })
+
+  test('the owner can filter profanity in chat', async ({ browser }) => {
+    room = await shareRoom(browser, 'Moderated session')
+    const { alice, bob } = room
+    await alice.getByRole('button', { name: 'Share' }).click()
+    await alice.getByLabel('Filter profanity in chat').check()
+    await expect(alice.getByLabel('Filter profanity in chat')).toBeChecked()
+    await alice.getByRole('dialog').getByRole('button', { name: 'Close' }).click()
+    await bob.getByRole('tab', { name: 'Chat' }).click()
+    await alice.getByRole('tab', { name: 'Chat' }).click()
+    await alice.getByLabel('Message').fill('this is shit')
+    await alice.getByRole('button', { name: 'Send' }).click()
+    await expect(bob.getByLabel('Chat').getByText('this is ****')).toBeVisible()
+  })
+
+  test('an AI review marks the line and its fix reaches everyone', async ({ browser }) => {
+    room = await shareRoom(browser, 'Review session')
+    const { alice, bob } = room
+    await alice.getByRole('tab', { name: 'AI Review' }).click()
+    await alice.getByLabel('AI review').getByRole('button', { name: 'Run' }).click()
+    await expect(alice.getByText('Print a clearer greeting')).toBeVisible()
+    await expect(alice.locator('.cs-review-warning').first()).toBeAttached()
+    await alice.getByRole('button', { name: 'Apply fix' }).click()
+    await expect(editorText(bob)).toContainText('fixed_by_review')
+  })
+
+  test('a snapshot opens read-only, and authors show beside the code', async ({ browser }) => {
+    room = await shareRoom(browser, 'Blame session')
+    const { alice } = room
+    await typeInEditor(alice, '\nalice_line')
+    await alice.getByRole('tab', { name: 'History' }).click()
+    await alice.getByLabel('Checkpoint name').fill('saved')
+    await alice.getByRole('button', { name: 'Save' }).click()
+    await alice.getByLabel('History').getByRole('button', { name: 'View' }).click()
+    const view = alice.getByTestId('snapshot-view')
+    await expect(view.locator('.view-lines')).toContainText('alice_line')
+    await view.locator('.view-lines').click()
+    await alice.keyboard.type('nope')
+    await expect(view.locator('.view-lines')).not.toContainText('nope')
+    await alice.getByRole('dialog').getByRole('button', { name: 'Close' }).click()
+
+    await alice.getByLabel('Who wrote each line').check()
+    await expect(alice.locator('.cs-blame', { hasText: 'Alice' })).toBeVisible()
+    await alice.getByLabel('Who wrote each line').uncheck()
+    await expect(alice.locator('.cs-blame')).toHaveCount(0)
+  })
+
   test('a comment follows its line when someone edits above it', async ({ browser }) => {
     room = await shareRoom(browser, 'Comment session')
     const { alice, bob } = room
@@ -294,6 +391,89 @@ test.describe('the pages around the workspace', () => {
     await page.getByLabel('Theme').selectOption('light')
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
     await page.context().close()
+  })
+
+  test('Vim and Emacs keys work in the editor', async ({ browser }) => {
+    const context = await browser.newContext()
+    const page = await context.newPage()
+    await page.goto('/')
+    await signIn(page, 'carol@test.local')
+    await expect(page.getByRole('heading', { name: 'Create a room' })).toBeVisible()
+    const openRoom = async (name: string, keys: string): Promise<void> => {
+      await page.getByLabel('Room name').fill(name)
+      await page.getByRole('button', { name: 'Create room' }).click()
+      await expect(editorText(page)).toContainText('print')
+      await expect(page.locator(`[data-keymap="${keys}"]`)).toBeAttached()
+      await editorText(page).click()
+      await page.keyboard.press('Control+Home')
+    }
+    const choose = async (keys: string): Promise<void> => {
+      await page.goto('/settings')
+      await page.getByLabel('Editor keys').selectOption(keys)
+      await expect(page.getByLabel('Editor keys')).toHaveValue(keys)
+      await page.goto('/')
+      await expect(page.getByRole('heading', { name: 'Create a room' })).toBeVisible()
+    }
+
+    await choose('vim')
+    await openRoom('Vim room', 'vim')
+    await page.keyboard.type('ivim_typed', { delay: REALISTIC_TYPING_MS })
+    await page.keyboard.press('Escape')
+    await expect(editorText(page)).toContainText('vim_typed')
+    await expect(editorText(page)).not.toContainText('ivim_typed')
+
+    await choose('emacs')
+    await openRoom('Emacs room', 'emacs')
+    await page.keyboard.press('Control+e')
+    await page.keyboard.type('_emacs_end', { delay: REALISTIC_TYPING_MS })
+    await expect(editorText(page)).toContainText(')_emacs_end')
+    await context.close()
+  })
+
+  test('the main pages pass an automated accessibility scan', async ({ browser }) => {
+    test.setTimeout(240_000)
+    const context = await browser.newContext()
+    const page = await context.newPage()
+    const scan = async (): Promise<void> => {
+      const { violations } = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa'])
+        .exclude('.monaco-editor')
+        .exclude('.xterm')
+        .analyze()
+      const found = violations.map((violation) => ({
+        rule: violation.id,
+        targets: violation.nodes.slice(0, 3).map((node) => node.target.join(' ')),
+      }))
+      expect(found).toEqual([])
+    }
+    await page.goto('/login')
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+    await scan()
+    await signIn(page, 'dana@test.local')
+    await expect(page.getByRole('heading', { name: 'Create a room' })).toBeVisible()
+    await scan()
+    await page.getByRole('link', { name: 'Practice' }).click()
+    await expect(page.getByRole('heading', { name: 'Problems' })).toBeVisible()
+    await scan()
+    await page.getByRole('link', { name: 'Settings' }).click()
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
+    await scan()
+    await page.getByRole('link', { name: 'Rooms' }).click()
+    await page.getByLabel('Room name').fill('Accessible room')
+    await page.getByRole('button', { name: 'Create room' }).click()
+    await expect(editorText(page)).toContainText('print')
+    await scan()
+
+    await page.getByRole('link', { name: 'Rooms' }).click()
+    await page.getByRole('link', { name: 'Settings' }).click()
+    await page.getByLabel('Theme').selectOption('dark')
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+    await scan()
+    await page.getByRole('link', { name: 'Rooms' }).click()
+    await page.getByRole('link', { name: /Accessible room/ }).first().click()
+    await expect(editorText(page)).toContainText('print')
+    await scan()
+    await context.close()
   })
 
   test('a signed-out visitor is sent to sign in', async ({ browser }) => {

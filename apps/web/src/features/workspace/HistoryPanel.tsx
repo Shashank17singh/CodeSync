@@ -1,16 +1,20 @@
 import type { CollabSession } from '@codesync/collab-client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { lazy, Suspense, useCallback, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Badge, Button, Dialog, ErrorNotice, Loading } from '../../components/ui'
 import { api, apiDownload } from '../../lib/api'
 import type { BlameRange, SnapshotRow } from '../../lib/types'
+import type { LineMarker } from '../presence/collabEditor'
 import { useChannelEvent } from './hooks'
 
 const DiffView = lazy(async () => ({ default: (await import('./DiffView')).DiffView }))
+const SnapshotView = lazy(async () => ({ default: (await import('./DiffView')).SnapshotView }))
 
+const BLAME_REFRESH_MS = 10_000
 const KIND_LABELS = { AUTO: 'Auto', RUN: 'Run', MANUAL: 'Checkpoint' }
 
 interface Comparison {
+  mode: 'view' | 'compare'
   snapshotId: string
   path: string
   content: string
@@ -21,9 +25,16 @@ export interface HistoryPanelProps {
   projectId: string
   fileId: string | null
   canEdit: boolean
+  onBlame: (fileId: string | null, markers: readonly LineMarker[]) => void
 }
 
-export function HistoryPanel({ session, projectId, fileId, canEdit }: HistoryPanelProps) {
+export function HistoryPanel({
+  session,
+  projectId,
+  fileId,
+  canEdit,
+  onBlame,
+}: HistoryPanelProps) {
   const client = useQueryClient()
   const [label, setLabel] = useState('')
   const [error, setError] = useState<unknown>(null)
@@ -42,7 +53,25 @@ export function HistoryPanel({ session, projectId, fileId, canEdit }: HistoryPan
     enabled: showBlame && fileId !== null,
     queryFn: () =>
       api<{ ranges: BlameRange[]; users: Record<string, string> }>(`/files/${fileId}/blame`),
+    refetchInterval: BLAME_REFRESH_MS,
   })
+
+  // Shown beside the code in the editor, on the first line of each author's block.
+  useEffect(() => {
+    if (!showBlame || !blame.data) {
+      onBlame(null, [])
+      return
+    }
+    const { ranges, users: names } = blame.data
+    onBlame(
+      fileId,
+      ranges.map((range) => ({
+        line: range.startLine,
+        kind: 'blame',
+        message: range.userId ? (names[range.userId] ?? 'Someone') : 'Imported',
+      })),
+    )
+  }, [showBlame, blame.data, fileId, onBlame])
   const refresh = useCallback(
     () => client.invalidateQueries({ queryKey: ['snapshots', projectId] }),
     [client, projectId],
@@ -57,13 +86,13 @@ export function HistoryPanel({ session, projectId, fileId, canEdit }: HistoryPan
     },
   })
 
-  const view = async (snapshotId: string): Promise<void> => {
+  const view = async (snapshotId: string, mode: Comparison['mode']): Promise<void> => {
     setError(null)
     try {
       const file = await api<{ path: string; content: string }>(
         `/snapshots/${snapshotId}/files/${fileId}`,
       )
-      setCompare({ snapshotId, ...file })
+      setCompare({ mode, snapshotId, ...file })
     } catch (failure) {
       setError(failure)
     }
@@ -178,7 +207,14 @@ export function HistoryPanel({ session, projectId, fileId, canEdit }: HistoryPan
                 <Button
                   className="!px-1.5 !py-0.5"
                   disabled={!fileId}
-                  onClick={() => void view(snapshot.id)}
+                  onClick={() => void view(snapshot.id, 'view')}
+                >
+                  View
+                </Button>
+                <Button
+                  className="!px-1.5 !py-0.5"
+                  disabled={!fileId}
+                  onClick={() => void view(snapshot.id, 'compare')}
                 >
                   Compare
                 </Button>
@@ -208,7 +244,13 @@ export function HistoryPanel({ session, projectId, fileId, canEdit }: HistoryPan
       </div>
       <Dialog
         wide
-        title={compare ? `${compare.path}: snapshot and current` : ''}
+        title={
+          compare?.mode === 'view'
+            ? `${compare.path} at this snapshot (read-only)`
+            : compare
+              ? `${compare.path}: snapshot and current`
+              : ''
+        }
         open={compare !== null}
         onClose={() => setCompare(null)}
       >
@@ -216,11 +258,15 @@ export function HistoryPanel({ session, projectId, fileId, canEdit }: HistoryPan
           <>
             <div className="min-h-0 flex-1">
               <Suspense fallback={<Loading label="Loading comparison…" />}>
-                <DiffView
-                  original={compare.content}
-                  modified={session.files.get(fileId)?.toString() ?? ''}
-                  path={compare.path}
-                />
+                {compare.mode === 'view' ? (
+                  <SnapshotView content={compare.content} path={compare.path} />
+                ) : (
+                  <DiffView
+                    original={compare.content}
+                    modified={session.files.get(fileId)?.toString() ?? ''}
+                    path={compare.path}
+                  />
+                )}
               </Suspense>
             </div>
             {canEdit && (

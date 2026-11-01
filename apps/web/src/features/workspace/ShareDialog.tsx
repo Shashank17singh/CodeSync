@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Button, Dialog, ErrorNotice, Field } from '../../components/ui'
 import { api } from '../../lib/api'
@@ -7,11 +7,13 @@ const HOURS_PER_WEEK = 168
 
 export interface ShareDialogProps {
   roomId: string
+  profanityFilter: boolean
   open: boolean
   onClose: () => void
 }
 
-export function ShareDialog({ roomId, open, onClose }: ShareDialogProps) {
+export function ShareDialog({ roomId, profanityFilter, open, onClose }: ShareDialogProps) {
+  const client = useQueryClient()
   const [role, setRole] = useState('EDITOR')
   const [copied, setCopied] = useState(false)
   const invite = useMutation({
@@ -22,6 +24,13 @@ export function ShareDialog({ roomId, open, onClose }: ShareDialogProps) {
       }),
     onSuccess: () => setCopied(false),
   })
+  const moderation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      api(`/rooms/${roomId}`, { method: 'PATCH', body: { profanityFilter: enabled } }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['room', roomId] }),
+  })
+  // Shows the choice at once. The saved value takes over if the save fails.
+  const filterOn = moderation.isError ? profanityFilter : (moderation.variables ?? profanityFilter)
   const submit = (event: FormEvent): void => {
     event.preventDefault()
     invite.mutate()
@@ -34,6 +43,16 @@ export function ShareDialog({ roomId, open, onClose }: ShareDialogProps) {
   }
   return (
     <Dialog title="Share this room" open={open} onClose={onClose}>
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <input
+          type="checkbox"
+          checked={filterOn}
+          disabled={moderation.isPending}
+          onChange={(event) => moderation.mutate(event.target.checked)}
+        />
+        Filter profanity in chat
+      </label>
+      <ErrorNotice error={moderation.error} />
       <form onSubmit={submit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm font-medium">
           People with the link can

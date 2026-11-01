@@ -1,15 +1,23 @@
 import type { TreeEntry } from '@codesync/shared'
-import { useEffect, useMemo, useState, type DragEvent, type FormEvent } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react'
 import { Button, Dialog, ErrorNotice, Field } from '../../components/ui'
 import { api } from '../../lib/api'
 import { buildTree, type TreeNode } from './model'
 
 const FILE_BADGES: Record<string, { label: string; className: string }> = {
-  py: { label: 'Py', className: 'text-sky-600 dark:text-sky-400' },
-  cpp: { label: 'C+', className: 'text-indigo-600 dark:text-indigo-400' },
-  cc: { label: 'C+', className: 'text-indigo-600 dark:text-indigo-400' },
-  java: { label: 'Jv', className: 'text-orange-600 dark:text-orange-400' },
-  js: { label: 'JS', className: 'text-yellow-600 dark:text-yellow-400' },
+  py: { label: 'Py', className: 'text-sky-700 dark:text-sky-400' },
+  cpp: { label: 'C+', className: 'text-indigo-700 dark:text-indigo-400' },
+  cc: { label: 'C+', className: 'text-indigo-700 dark:text-indigo-400' },
+  java: { label: 'Jv', className: 'text-orange-800 dark:text-orange-400' },
+  js: { label: 'JS', className: 'text-yellow-800 dark:text-yellow-400' },
   md: { label: 'Md', className: 'text-muted' },
 }
 
@@ -35,6 +43,7 @@ function FileIcon({ node }: { node: TreeNode }) {
 type Prompt =
   | { type: 'create'; kind: 'FILE' | 'DIRECTORY'; parent: string }
   | { type: 'rename'; node: TreeNode }
+  | { type: 'move'; node: TreeNode }
 
 const DRAG_TYPE = 'application/x-codesync-file'
 
@@ -52,12 +61,31 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
   const [prompt, setPrompt] = useState<Prompt | null>(null)
   const [name, setName] = useState('')
   const [error, setError] = useState<unknown>(null)
+  const menuElement = useRef<HTMLDivElement>(null)
+  const menuTrigger = useRef<HTMLElement | null>(null)
+
+  // Focus moves into the menu and back out, so a keyboard user is never left behind it.
+  useEffect(() => {
+    if (menu) menuElement.current?.querySelector('button')?.focus()
+  }, [menu])
+
+  const onMenuKey = (event: ReactKeyboardEvent): void => {
+    const step = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+    if (step === 0) return
+    event.preventDefault()
+    const items = [...(menuElement.current?.querySelectorAll('button') ?? [])]
+    const index = items.indexOf(document.activeElement as HTMLButtonElement)
+    items[(index + step + items.length) % items.length]?.focus()
+  }
 
   useEffect(() => {
     if (!menu) return undefined
     const close = (): void => setMenu(null)
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') close()
+      if (event.key === 'Escape') {
+        close()
+        menuTrigger.current?.focus()
+      }
     }
     window.addEventListener('click', close)
     window.addEventListener('keydown', onKey)
@@ -81,7 +109,7 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
   }
 
   const ask = (next: Prompt): void => {
-    setName(next.type === 'rename' ? next.node.name : '')
+    setName(next.type === 'rename' ? next.node.name : next.type === 'move' ? next.node.path : '')
     setPrompt(next)
   }
   const submitPrompt = (event: FormEvent): void => {
@@ -90,6 +118,8 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
     if (prompt.type === 'create') {
       const path = prompt.parent ? `${prompt.parent}/${name}` : name
       run(api(`/projects/${projectId}/files`, { method: 'POST', body: { path, kind: prompt.kind } }))
+    } else if (prompt.type === 'move') {
+      move(prompt.node, name)
     } else {
       const parent = prompt.node.path.split('/').slice(0, -1).join('/')
       move(prompt.node, parent ? `${parent}/${name}` : name)
@@ -147,6 +177,7 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
             className="rounded px-1 text-muted opacity-0 group-hover:opacity-100 focus:opacity-100"
             onClick={(event) => {
               event.stopPropagation()
+              menuTrigger.current = event.currentTarget
               const box = event.currentTarget.getBoundingClientRect()
               setMenu({ node, x: box.left, y: box.bottom })
             }}
@@ -162,7 +193,7 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
   const parentOf = (node: TreeNode): string =>
     node.kind === 'DIRECTORY' ? node.path : node.path.split('/').slice(0, -1).join('/')
 
-  // Dragging is a shortcut: the Rename action reaches the same result from the keyboard.
+  // Dragging is a shortcut: the Move action reaches the same result from the keyboard.
   return (
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <nav
@@ -197,7 +228,10 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
 
       {menu && (
         <div
+          ref={menuElement}
           role="menu"
+          tabIndex={-1}
+          onKeyDown={onMenuKey}
           aria-label={`Actions for ${menu.node.path}`}
           style={{ left: menu.x, top: menu.y }}
           className="fixed z-20 flex min-w-36 flex-col rounded border border-line bg-surface p-1 shadow-lg"
@@ -206,6 +240,7 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
             [
               ['New file here', () => ask({ type: 'create', kind: 'FILE', parent: parentOf(menu.node) })],
               ['Rename', () => ask({ type: 'rename', node: menu.node })],
+              ['Move', () => ask({ type: 'move', node: menu.node })],
               ['Delete', () => remove(menu.node)],
             ] as const
           ).map(([label, action]) => (
@@ -226,19 +261,21 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
         title={
           prompt?.type === 'rename'
             ? `Rename ${prompt.node.name}`
-            : prompt?.kind === 'DIRECTORY'
-              ? 'New folder'
-              : 'New file'
+            : prompt?.type === 'move'
+              ? `Move ${prompt.node.name}`
+              : prompt?.kind === 'DIRECTORY'
+                ? 'New folder'
+                : 'New file'
         }
         open={prompt !== null}
         onClose={() => setPrompt(null)}
       >
         <form onSubmit={submitPrompt} className="flex flex-col gap-3">
           <Field
-            label="Name"
+            label={prompt?.type === 'move' ? 'New path' : 'Name'}
             required
             autoFocus
-            maxLength={255}
+            maxLength={1024}
             value={name}
             onChange={(event) => setName(event.target.value)}
           />

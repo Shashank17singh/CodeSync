@@ -1,5 +1,13 @@
 import { defineConfig } from '@playwright/test'
 
+// E2E_PRODUCTION=1 serves the real production bundle, which can differ from the dev server.
+const webCommand = process.env['E2E_PRODUCTION']
+  ? 'corepack pnpm exec vite build && corepack pnpm exec vite preview --host 127.0.0.1 --port 5199 --strictPort'
+  : 'corepack pnpm exec vite --host 127.0.0.1 --port 5199 --strictPort'
+const webUrl = process.env['E2E_PRODUCTION']
+  ? 'http://127.0.0.1:5199/login'
+  : 'http://127.0.0.1:5199/e2e/harness/index.html'
+
 export default defineConfig({
   testDir: 'e2e',
   testMatch: '*.spec.ts',
@@ -28,8 +36,8 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: 'corepack pnpm exec vite --host 127.0.0.1 --port 5199 --strictPort',
-      url: 'http://127.0.0.1:5199/e2e/harness/index.html',
+      command: webCommand,
+      url: webUrl,
       reuseExistingServer: true,
       timeout: 120_000,
       env: {

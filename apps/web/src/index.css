@@ -85,6 +85,11 @@ body {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
+.cs-blame {
+  color: var(--muted);
+  font-style: italic;
+}
+
 .cs-markdown p {
   margin: 0.25rem 0;
 }

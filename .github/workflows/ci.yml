@@ -73,6 +73,10 @@ jobs:
       - run: pnpm --filter @codesync/collab-client build
       - run: pnpm --filter @codesync/web exec playwright install --with-deps chromium
       - run: pnpm --filter @codesync/web test:e2e
+      - name: The same workspace tests against the production bundle
+        run: pnpm --filter @codesync/web test:e2e -- e2e/workspace.spec.ts
+        env:
+          E2E_PRODUCTION: '1'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

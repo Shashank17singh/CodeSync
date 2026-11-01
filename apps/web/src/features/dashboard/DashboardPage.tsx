@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Badge, Button, ErrorNotice, Field, Loading } from '../../components/ui'
@@ -17,6 +17,7 @@ const RECENT_COUNT = 3
 
 export function DashboardPage() {
   const navigate = useNavigate()
+  const client = useQueryClient()
   const [name, setName] = useState('')
   const [template, setTemplate] = useState('PYTHON')
   const [link, setLink] = useState('')
@@ -30,7 +31,10 @@ export function DashboardPage() {
         method: 'POST',
         body: { name, template, visibility: 'PRIVATE' },
       }),
-    onSuccess: ({ room }) => navigate(`/rooms/${room.id}`),
+    onSuccess: async ({ room }) => {
+      await client.invalidateQueries({ queryKey: ['rooms'] })
+      await navigate(`/rooms/${room.id}`)
+    },
   })
 
   const onCreate = (event: FormEvent): void => {

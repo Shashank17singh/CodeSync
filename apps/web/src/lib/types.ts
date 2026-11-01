@@ -21,7 +21,11 @@ export interface User {
   avatarUrl: string | null
   role: string
   theme: 'system' | 'light' | 'dark'
-  editorSettings: Partial<{ fontSize: number; tabSize: number }> | null
+  editorSettings: Partial<{
+    fontSize: number
+    tabSize: number
+    keybindings: 'default' | 'vim' | 'emacs'
+  }> | null
 }
 
 export interface RoomSummary {

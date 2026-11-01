@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { ErrorNotice, Loading } from '../../components/ui'
@@ -5,6 +6,7 @@ import { api } from '../../lib/api'
 
 export function InvitePage() {
   const navigate = useNavigate()
+  const client = useQueryClient()
   const [error, setError] = useState<unknown>(null)
   const started = useRef(false)
 
@@ -19,9 +21,12 @@ export function InvitePage() {
       return
     }
     api<{ roomId: string }>('/invites/accept', { method: 'POST', body: { token } })
-      .then(({ roomId }) => navigate(`/rooms/${roomId}`, { replace: true }))
+      .then(async ({ roomId }) => {
+        await client.invalidateQueries({ queryKey: ['rooms'] })
+        await navigate(`/rooms/${roomId}`, { replace: true })
+      })
       .catch(setError)
-  }, [navigate])
+  }, [navigate, client])
 
   if (!error) return <Loading label="Joining the room…" />
   return (

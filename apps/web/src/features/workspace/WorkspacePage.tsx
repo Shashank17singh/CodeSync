@@ -65,7 +65,7 @@ interface TabStripProps {
 
 function TabStrip({ tabs, pathOf, onSelect, onClose }: TabStripProps) {
   return (
-    <div role="tablist" aria-label="Open files" className="flex overflow-x-auto border-b border-line">
+    <div role="group" aria-label="Open files" className="flex overflow-x-auto border-b border-line">
       {tabs.open.map((id) => {
         const path = pathOf(id) ?? ''
         const active = id === tabs.active
@@ -78,8 +78,7 @@ function TabStrip({ tabs, pathOf, onSelect, onClose }: TabStripProps) {
           >
             <button
               type="button"
-              role="tab"
-              aria-selected={active}
+              aria-current={active ? 'true' : undefined}
               title={path}
               onClick={() => onSelect(id)}
               className="py-1 pr-1 pl-2"
@@ -131,6 +130,10 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
   const [review, setReview] = useState<{ fileId: string | null; findings: readonly ReviewFinding[] }>({
     fileId: null,
     findings: [],
+  })
+  const [blame, setBlame] = useState<{ fileId: string | null; markers: readonly LineMarker[] }>({
+    fileId: null,
+    markers: [],
   })
   const [notice, setNotice] = useState<string | null>(null)
   const [follow, setFollow] = useState<FollowController | null>(null)
@@ -239,6 +242,11 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
     [],
   )
 
+  const onBlame = useCallback(
+    (fileId: string | null, markers: readonly LineMarker[]) => setBlame({ fileId, markers }),
+    [],
+  )
+
   const markersFor = useCallback(
     (fileId: string | null): readonly LineMarker[] => {
       const reviewMarkers: LineMarker[] =
@@ -254,9 +262,10 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
         fileId === activeFileId
           ? commentLines.map((line) => ({ line, kind: 'comment' as const }))
           : []
-      return [...comments, ...reviewMarkers]
+      const authors = fileId !== null && blame.fileId === fileId ? blame.markers : []
+      return [...comments, ...reviewMarkers, ...authors]
     },
-    [review, commentLines, activeFileId],
+    [review, commentLines, activeFileId, blame],
   )
   const firstMarkers = useMemo(() => markersFor(panes[0].active), [markersFor, panes])
   const secondMarkers = useMemo(() => markersFor(panes[1].active), [markersFor, panes])
@@ -275,8 +284,10 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
   const onTabKey = (event: ReactKeyboardEvent): void => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
     if (step === 0) return
-    const index = RIGHT_TABS.indexOf(rightTab)
-    setRightTab(RIGHT_TABS[(index + step + RIGHT_TABS.length) % RIGHT_TABS.length] as RightTab)
+    const next = (RIGHT_TABS.indexOf(rightTab) + step + RIGHT_TABS.length) % RIGHT_TABS.length
+    setRightTab(RIGHT_TABS[next] as RightTab)
+    const tabs = event.currentTarget.parentElement?.querySelectorAll<HTMLElement>('[role="tab"]')
+    tabs?.[next]?.focus()
   }
 
   const chat = (visible: boolean) => (
@@ -320,7 +331,12 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
         )}
         {isOwner && <Button onClick={() => setShareOpen(true)}>Share</Button>}
       </span>
-      <ShareDialog roomId={room.id} open={shareOpen} onClose={() => setShareOpen(false)} />
+      <ShareDialog
+        roomId={room.id}
+        profanityFilter={room.profanityFilter}
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+      />
     </header>
   )
 
@@ -537,6 +553,7 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
                   projectId={projectId}
                   fileId={activeFileId}
                   canEdit={canEdit}
+                  onBlame={onBlame}
                 />
               </div>
             </div>

@@ -31,6 +31,8 @@ const seedUser = (email: string, displayName: string) =>
   })
 const alice = await seedUser('alice@test.local', 'Alice')
 await seedUser('bob@test.local', 'Bob')
+await seedUser('carol@test.local', 'Carol')
+await seedUser('dana@test.local', 'Dana')
 
 const problem = await prisma.problem.create({
   data: {
@@ -139,7 +141,33 @@ const queue: ExecutionQueue = {
         .catch((error: unknown) => logger.error({ err: error }, 'scripted judge failed'))
     }, WORKER_DELAY_MS)
   },
-  enqueueReview: async () => undefined,
+  enqueueReview: async ({ review_id }) => {
+    setTimeout(() => {
+      app
+        .inject({
+          method: 'POST',
+          url: `/api/v1/internal/reviews/${review_id}/result`,
+          headers: { 'x-service-token': config.internalServiceToken },
+          payload: {
+            status: 'DONE',
+            issues: [
+              {
+                line_start: 1,
+                line_end: 1,
+                severity: 'warning',
+                category: 'style',
+                message: 'Print a clearer greeting',
+                suggested_fix: 'print("fixed_by_review")',
+              },
+            ],
+            explanation: 'One **style** note.',
+            complexity: [],
+            model: 'scripted',
+          },
+        })
+        .catch((error: unknown) => logger.error({ err: error }, 'scripted review failed'))
+    }, WORKER_DELAY_MS)
+  },
   waitingCount: async () => 0,
 }
 

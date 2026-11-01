@@ -98,9 +98,11 @@ export interface EditorSettings {
 export interface LineMarker {
   line: number
   endLine?: number
-  kind: 'comment' | 'error' | 'warning' | 'info'
+  kind: 'comment' | 'error' | 'warning' | 'info' | 'blame'
   message?: string
 }
+
+export type EditorKeys = 'default' | 'vim' | 'emacs'
 
 export interface SelectionRange {
   start: number
@@ -124,6 +126,8 @@ export class CollabEditor {
   private fileId: string | null = null
   private peers: readonly PresencePeer[] = []
   private tabSize = 4
+  private keys: EditorKeys = 'default'
+  private keymap: { dispose: () => void } | null = null
 
   constructor({
     container,
@@ -232,9 +236,50 @@ export class CollabEditor {
     this.editor.getModel()?.updateOptions({ tabSize })
   }
 
+  // Loaded on demand, because most people never turn these on.
+  async setKeybindings(keys: EditorKeys, status: HTMLElement | null): Promise<void> {
+    if (keys === this.keys) return
+    this.keys = keys
+    const node = this.editor.getContainerDomNode()
+    delete node.dataset['keymap']
+    this.keymap?.dispose()
+    this.keymap = null
+    if (keys === 'vim' && status) {
+      const { initVimMode } = await import('monaco-vim')
+      if (this.keys === 'vim') this.keymap = initVimMode(this.editor, status)
+    } else if (keys === 'emacs') {
+      const { EmacsExtension } = await import('monaco-emacs')
+      if (this.keys === 'emacs') {
+        const extension = new EmacsExtension(this.editor)
+        extension.start()
+        this.keymap = extension
+      }
+    }
+    if (this.keymap) node.dataset['keymap'] = keys
+  }
+
+  // Names reach Monaco as injected text, which it renders as text and never as markup.
+  private blameDecoration(
+    model: monaco.editor.ITextModel,
+    line: number,
+    name: string,
+  ): monaco.editor.IModelDeltaDecoration {
+    const last = Math.min(line, model.getLineCount())
+    const column = model.getLineMaxColumn(last)
+    return {
+      range: new monaco.Range(last, column, last, column),
+      options: {
+        showIfCollapsed: true,
+        after: { content: `    ${name}`, inlineClassName: 'cs-blame' },
+      },
+    }
+  }
+
   setMarkers(markers: readonly LineMarker[]): void {
+    const model = this.editor.getModel()
+    if (!model) return
     this.markers.set(
-      markers.map(({ line, endLine, kind, message }) => ({
+      markers.map(({ line, endLine, kind, message }) => kind === 'blame' ? this.blameDecoration(model, line, message ?? '') : ({
         range: new monaco.Range(line, 1, endLine ?? line, 1),
         options: {
           isWholeLine: true,
@@ -338,6 +383,7 @@ export class CollabEditor {
     this.text?.unobserve(this.onTextChange)
     for (const cursor of this.cursors.values()) cursor.dispose()
     this.cursors.clear()
+    this.keymap?.dispose()
     this.disposables.forEach((disposable) => disposable.dispose())
     this.selections.clear()
     this.editor.dispose()

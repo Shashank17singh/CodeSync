@@ -26,6 +26,9 @@ export const useSession = create<SessionState>((set, get) => {
       theme: user.theme,
       ...(user.editorSettings?.fontSize ? { fontSize: user.editorSettings.fontSize } : {}),
       ...(user.editorSettings?.tabSize ? { tabSize: user.editorSettings.tabSize } : {}),
+      ...(user.editorSettings?.keybindings
+        ? { keybindings: user.editorSettings.keybindings }
+        : {}),
     })
     set({ status: 'signedIn', user })
   }

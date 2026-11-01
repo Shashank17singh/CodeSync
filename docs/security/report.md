@@ -36,6 +36,14 @@ on that date. "Configured" means the setting exists but nothing has exercised it
 | F2 | Comments had no rate limit, though viewers can post them and each one fans out to the room | Medium | 30 a minute per user, with a test |
 | F3 | Review findings reached Monaco hover text, which it treats as Markdown | Low | Markdown characters are escaped before display |
 
+## Accessibility
+
+An axe scan (WCAG 2 A and AA) passes on sign-in, rooms, practice, settings and the workspace, with
+the workspace and settings scanned in both themes. It found and we fixed invalid ARIA on the open
+files strip and low contrast on file badges. Monaco and xterm are excluded from the scan. Keyboard
+tests cover the file menu, moving a file and the side panel tabs. No one has tested this with a
+screen reader, and an automated scan catches only part of what a real audit would.
+
 ### Accepted risks
 
 - **Collab token in the query string.** Browsers cannot set headers on a WebSocket. The token lasts

@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { ErrorNotice } from '../../components/ui'
 import { api } from '../../lib/api'
-import { usePreferences, type RunShortcut, type ThemeChoice } from '../../lib/preferences'
+import {
+  usePreferences,
+  type Keybindings,
+  type RunShortcut,
+  type ThemeChoice,
+} from '../../lib/preferences'
 import { useSession } from '../../lib/session'
 
 const SHORTCUTS = [
@@ -23,7 +28,11 @@ export function SettingsPage() {
     preferences.set({ theme })
     api('/me', { method: 'PATCH', body: { theme } }).catch(setError)
   }
-  const saveEditor = (changes: { fontSize?: number; tabSize?: number }): void => {
+  const saveEditor = (changes: {
+    fontSize?: number
+    tabSize?: number
+    keybindings?: Keybindings
+  }): void => {
     preferences.set(changes)
     api('/me', { method: 'PATCH', body: { editorSettings: changes } }).catch(setError)
   }
@@ -92,6 +101,18 @@ export function SettingsPage() {
         <h2 id="keybindings" className="font-semibold">
           Keybindings
         </h2>
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Editor keys
+          <select
+            className={inputClass}
+            value={preferences.keybindings}
+            onChange={(event) => saveEditor({ keybindings: event.target.value as Keybindings })}
+          >
+            <option value="default">Default</option>
+            <option value="vim">Vim</option>
+            <option value="emacs">Emacs</option>
+          </select>
+        </label>
         <label className="flex flex-col gap-1 text-sm font-medium">
           Run shortcut
           <select

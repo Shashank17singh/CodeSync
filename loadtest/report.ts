@@ -15,6 +15,7 @@ interface CollabResult {
 const BAR_MAX_WIDTH = 420
 const ROW_HEIGHT = 34
 const LEFT = 90
+const SCALE_LEFT = 150
 
 const read = <T>(path: string): T | null =>
   existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as T) : null
@@ -142,6 +143,26 @@ if (k6Execution) {
   )
 }
 writeFileSync('results/REPORT.md', `${sections.join('\n')}\n`)
+
+function scaleChart(results: CollabResult[]): string {
+  const top = Math.max(...results.map((result) => result.latencyMs.p99), 1)
+  const bars = results
+    .map(({ load, latencyMs }, index) => {
+      const y = 30 + index * ROW_HEIGHT
+      const users = (load['rooms'] ?? 0) * (load['usersPerRoom'] ?? 0)
+      const width = Math.max(2, (latencyMs.p99 / top) * BAR_MAX_WIDTH)
+      return [
+        `<text x="${SCALE_LEFT - 10}" y="${y + 16}" text-anchor="end">${users} users, ${load['keysPerSecond']}/s</text>`,
+        `<rect x="${SCALE_LEFT}" y="${y}" width="${width}" height="22" fill="#0f766e"/>`,
+        `<text x="${SCALE_LEFT + width + 8}" y="${y + 16}">${latencyMs.p99} ms</text>`,
+      ].join('')
+    })
+    .join('')
+  const height = 40 + results.length * ROW_HEIGHT
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="700" height="${height}" font-family="sans-serif" font-size="14" fill="#1b1f23"><text x="${SCALE_LEFT}" y="18" font-weight="600">p99 update latency by load</text>${bars}</svg>\n`
+}
+
+if (steps.length > 0) writeFileSync('results/scale.svg', scaleChart(steps))
 
 const source = k6Collab ?? local
 if (source) writeFileSync('results/latency.svg', chart(source))

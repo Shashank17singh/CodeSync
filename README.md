@@ -38,6 +38,7 @@ Separate host:  Executor workers (Python) ────────────�
 | Security | [report.md](docs/security/report.md) |
 | Load tests | [loadtest/README.md](loadtest/README.md), [results](loadtest/results/REPORT.md) |
 | Paper outline | [ieee-outline.md](docs/paper/ieee-outline.md) |
+| Run, test and trade-offs per feature | [viva-guide.md](docs/viva-guide.md) |
 
 ## Setup in 10 commands
 
@@ -70,6 +71,7 @@ pnpm lint
 pnpm typecheck
 pnpm test                          # API, collab and web. PostgreSQL is embedded
 pnpm --filter @codesync/web test:e2e
+E2E_PRODUCTION=1 pnpm --filter @codesync/web test:e2e -- e2e/workspace.spec.ts   # production bundle
 cd services/executor && .venv/bin/pytest -m "not docker and not redis"
 ```
 
@@ -125,6 +127,7 @@ application host, so reach it through an SSH tunnel.
 | "You no longer have access" | The socket closed with 4403 because the user was removed or the room deleted |
 | Editors see different text after deploying | Two copies of Yjs were bundled. Keep `dedupe` in `vite.config.ts` |
 | Vite runs out of memory | Keep `monaco-editor` in `optimizeDeps.exclude` |
+| Vim or Emacs keys do nothing | Keep the `monaco-vim` and `monaco-emacs` aliases in `vite.config.ts` |
 | Runs stay queued | No worker is running, or it cannot reach Redis. Check `codesync_workers_active` |
 | The worker refuses to start | `SANDBOX_REQUIRE_GVISOR=true` and `runsc` is not installed |
 | Port 4200 or 54330 in use during browser tests | An earlier test stack is still running. Stop it, or wait for it to exit |

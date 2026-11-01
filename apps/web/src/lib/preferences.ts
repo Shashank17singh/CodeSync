@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware'
 
 export type ThemeChoice = 'system' | 'light' | 'dark'
 export type RunShortcut = 'ctrl-enter' | 'f5'
+export type Keybindings = 'default' | 'vim' | 'emacs'
 
 export interface Preferences {
   theme: ThemeChoice
@@ -11,6 +12,7 @@ export interface Preferences {
   tabSize: number
   wordWrap: boolean
   runShortcut: RunShortcut
+  keybindings: Keybindings
   set: (changes: Partial<Omit<Preferences, 'set'>>) => void
 }
 
@@ -22,6 +24,7 @@ export const usePreferences = create<Preferences>()(
       tabSize: 4,
       wordWrap: false,
       runShortcut: 'ctrl-enter',
+      keybindings: 'default',
       set: (changes) => set(changes),
     }),
     { name: 'codesync-preferences' },
