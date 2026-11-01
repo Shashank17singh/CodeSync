@@ -78,7 +78,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y runsc
           runsc --version
-          runsc flags | grep -i seccomp
           # Docker's seccomp profile is ignored inside gVisor unless this flag is set.
           sudo runsc install -- --oci-seccomp
           sudo systemctl restart docker
