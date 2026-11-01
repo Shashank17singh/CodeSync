@@ -24,7 +24,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 ## 3.2 Presence and live cursors
 
 - **Run:** start collab and web, then open a room in two browsers.
-- **Test:** `pnpm --filter @codesync/web test:e2e -- e2e/presence.spec.ts`
+- **Test:** `pnpm --filter @codesync/web exec playwright test e2e/presence.spec.ts`
 
 1. **Relative positions for cursors.** Each one must be resolved on every render. Absolute offsets
    are cheaper but point at the wrong character as soon as someone types above them.
@@ -138,7 +138,7 @@ More detail is in [version-history.md](architecture/version-history.md).
 
 - **Run:** `pnpm --filter @codesync/web dev`
 - **Test:** `pnpm --filter @codesync/web test`, `pnpm --filter @codesync/web test:e2e`, and
-  `E2E_PRODUCTION=1 pnpm --filter @codesync/web test:e2e -- e2e/workspace.spec.ts` for the real bundle
+  `E2E_PRODUCTION=1 pnpm --filter @codesync/web exec playwright test e2e/workspace.spec.ts` for the real bundle
 
 1. **Access token in memory only.** Every reload needs a refresh call. A script injected into the
    page has no stored token to steal.

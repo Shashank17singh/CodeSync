@@ -180,7 +180,7 @@ cd services/executor && .venv/bin/pytest -m "not docker and not redis"
 To run the workspace browser tests against the production bundle:
 
 ```bash
-E2E_PRODUCTION=1 pnpm --filter @codesync/web test:e2e -- e2e/workspace.spec.ts
+E2E_PRODUCTION=1 pnpm --filter @codesync/web exec playwright test e2e/workspace.spec.ts
 ```
 
 ---

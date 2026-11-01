@@ -102,7 +102,17 @@ export function createHarness(): Harness {
         disableBroadcastChannel: true,
       })
       sessions.push(session)
-      await waitFor(() => session.provider.synced)
+      const closeCodes: number[] = []
+      session.provider.on('connection-close', (event) => {
+        if (event) closeCodes.push(event.code)
+      })
+      // A permanent close code leaves a client unsynced for good, so a timeout must say why.
+      await waitFor(() => session.provider.synced).catch(() => {
+        const { wsconnected, wsconnecting } = session.provider
+        throw new Error(
+          `client did not sync: ${JSON.stringify({ wsconnected, wsconnecting, closeCodes })}`,
+        )
+      })
       return session
     },
     stop: async () => {
