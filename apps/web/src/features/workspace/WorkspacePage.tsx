@@ -473,7 +473,6 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
             <div
               role="tablist"
               aria-label="Side panel"
-              onKeyDown={onTabKey}
               className="flex overflow-x-auto border-b border-line"
             >
               {RIGHT_TABS.map((tab) => (
@@ -484,6 +483,7 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
                   aria-selected={rightTab === tab}
                   tabIndex={rightTab === tab ? 0 : -1}
                   onClick={() => setRightTab(tab)}
+                  onKeyDown={onTabKey}
                   className={`shrink-0 px-2 py-1.5 text-sm ${
                     rightTab === tab ? 'border-b-2 border-accent font-medium' : 'text-muted'
                   }`}

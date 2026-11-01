@@ -223,6 +223,20 @@ describe('chat and comments', () => {
       expect(response.statusCode).toBe(404)
     })
 
+    it('limits how fast one user can comment', async () => {
+      fixture = await createRoomFixture(api)
+      const post = () =>
+        api.app.inject(
+          as(fixture.viewer, {
+            method: 'POST',
+            url: `/files/${fixture.fileId}/comments`,
+            payload: { body: 'spam', ...ANCHOR },
+          }),
+        )
+      for (let index = 0; index < 30; index++) expect((await post()).statusCode).toBe(201)
+      expect((await post()).statusCode).toBe(429)
+    })
+
     it('refuses an anchor that is not base64', async () => {
       fixture = await createRoomFixture(api)
       const response = await api.app.inject(

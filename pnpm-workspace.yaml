@@ -1,9 +1,13 @@
 packages:
   - apps/*
   - packages/*
+  - loadtest
 minimumReleaseAgeExclude:
   - ws@8.22.1
   - bullmq@6.5.3
+overrides:
+  # Monaco pins 3.4.15, which has five published advisories.
+  dompurify: 3.4.17
 allowBuilds:
   '@embedded-postgres/windows-x64': true
   '@prisma/engines': true

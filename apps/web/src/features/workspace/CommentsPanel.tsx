@@ -95,6 +95,7 @@ export function CommentsPanel({
       }))
       .sort((a, b) => (a.anchor?.line ?? 0) - (b.anchor?.line ?? 0))
     // version stands in for the text's contents, which React cannot compare.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [comments.data, text, version])
 
   useEffect(() => {

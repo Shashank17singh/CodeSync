@@ -128,6 +128,8 @@ Chat messages are sent over WebSocket. REST covers history and moderation.
 | POST | `/problems/:slug/submissions` | Submit to the judge | User | Built |
 | GET | `/submissions/:id` | Verdict and per-test results | Submitter, Faculty | Built |
 | POST | `/problem-sets` | Create problem set | Faculty | Built |
+| GET | `/problem-sets` | List problem sets | User | Built |
+| GET | `/contests` | Contests in my rooms | User | Built |
 | GET | `/problem-sets/:id/leaderboard` | Problem set leaderboard | User | Built |
 | POST | `/rooms/:id/contests` | Create contest | Owner | Built |
 | GET | `/contests/:id` | Contest details and countdown | Viewer+ | Built |

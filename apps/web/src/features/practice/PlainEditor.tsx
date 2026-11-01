@@ -45,6 +45,7 @@ export function PlainEditor({ value, language, onChange }: PlainEditorProps) {
       editor.current = null
     }
     // The value only seeds the editor. Changing it from outside goes through the effect below.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [language])
 
   useEffect(() => {

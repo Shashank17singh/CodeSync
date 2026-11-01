@@ -20,7 +20,7 @@ describe('api client', () => {
   const authorisations = (): Array<string | undefined> =>
     fetchMock.mock.calls
       .filter(([url]) => !String(url).includes('/auth/refresh'))
-      .map(([, init]) => (init?.headers as Record<string, string>)['authorization'])
+      .map(([, init]) => ((init as RequestInit).headers as Record<string, string>)['authorization'])
 
   it('refreshes once on a 401 and repeats the request with the new token', async () => {
     fetchMock
@@ -39,7 +39,7 @@ describe('api client', () => {
           finishRefresh = resolve
         })
       }
-      const header = (init?.headers as Record<string, string>)['authorization']
+      const header = ((init as RequestInit).headers as Record<string, string>)['authorization']
       return header === 'Bearer fresh' ? json(200, { ok: true }) : json(401, {})
     })
     const requests = [api('/a'), api('/b'), api('/c')]

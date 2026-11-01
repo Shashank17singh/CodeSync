@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  lint-and-types:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm --filter @codesync/shared build
+      - run: pnpm --filter @codesync/db build
+      - run: pnpm --filter @codesync/collab-client build
+      - run: pnpm typecheck
+      - run: pnpm audit --prod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Lint and type check the executor
+        working-directory: services/executor
+        run: |
+          pip install -e '.[dev]'
+          ruff check .
+          mypy src
+
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @codesync/shared build
+      - run: pnpm --filter @codesync/db build
+      - run: pnpm --filter @codesync/collab-client build
+      - run: pnpm test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Executor tests that need neither Docker nor Redis
+        working-directory: services/executor
+        run: |
+          pip install -e '.[dev]'
+          pytest -q -m 'not docker and not redis'
+
+  e2e:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @codesync/shared build
+      - run: pnpm --filter @codesync/db build
+      - run: pnpm --filter @codesync/collab-client build
+      - run: pnpm --filter @codesync/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @codesync/web test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: apps/web/test-results
+
+  images:
+    needs: [lint-and-types, unit, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - { name: api, context: ., file: apps/api/Dockerfile }
+          - { name: collab, context: ., file: apps/collab/Dockerfile }
+          - { name: web, context: ., file: apps/web/Dockerfile }
+          - { name: migrate, context: ., file: packages/db/Dockerfile }
+          - { name: executor, context: services/executor, file: services/executor/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/${{ matrix.name }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/${{ matrix.name }}:latest

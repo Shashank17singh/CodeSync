@@ -1,0 +1,36 @@
+{
+  "tool": "node driver",
+  "environment": {
+    "note": "One laptop, load generator and server on the same machine, in-memory stand-in for Redis and PostgreSQL.",
+    "cpus": "Intel(R) Core(TM) i5-10210U CPU @ 1.60GHz",
+    "logicalCores": 8,
+    "totalMemoryGb": 7.8,
+    "freeMemoryGbAtEnd": 2.2,
+    "node": "v24.18.0"
+  },
+  "load": {
+    "rooms": 10,
+    "usersPerRoom": 20,
+    "durationSeconds": 30,
+    "keysPerSecond": 5
+  },
+  "updates": {
+    "sent": 30403,
+    "delivered": 577657,
+    "expected": 577657
+  },
+  "deliveredPercent": 100,
+  "disconnects": 0,
+  "latencyMs": {
+    "p50": 16,
+    "p95": 317,
+    "p99": 685,
+    "max": 915
+  },
+  "server": {
+    "cpuPercentAverage": 75.6,
+    "cpuPercentPeak": 142.1,
+    "rssMbAverage": 174,
+    "rssMbPeak": 229.4
+  }
+}

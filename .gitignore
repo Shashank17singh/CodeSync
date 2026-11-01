@@ -1,5 +1,6 @@
 node_modules/
 dist/
+loadtest/results/targets.json
 coverage/
 .env
 packages/db/src/generated/

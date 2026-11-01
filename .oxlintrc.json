@@ -1,0 +1,11 @@
+{
+  "plugins": ["typescript", "react", "jsx-a11y"],
+  "categories": { "correctness": "error" },
+  "rules": {
+    "react/refs": "off",
+    "react/set-state-in-effect": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/no-autofocus": "off"
+  },
+  "ignorePatterns": ["**/dist/**", "**/generated/**", "**/.venv/**", "**/test-results/**"]
+}

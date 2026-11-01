@@ -7,6 +7,7 @@ import type { Logger } from 'pino'
 import { WebSocket, WebSocketServer, type RawData } from 'ws'
 import { verifyCollabToken } from './auth/token.js'
 import type { ServerConfig } from './config.js'
+import { CollabMetrics } from './metrics.js'
 import { Connection } from './rooms/connection.js'
 import type { Room } from './rooms/room.js'
 import { RoomManager } from './rooms/roomManager.js'
@@ -41,8 +42,26 @@ export async function startCollabServer(options: CollabServerOptions): Promise<C
   const { config, storage, logger } = options
   const rooms = new RoomManager(storage, config, logger)
   const connections = new Map<WebSocket, Connection>()
+  const metrics = new CollabMetrics({
+    activeRooms: () => rooms.activeRooms,
+    connections: () => connections.size,
+  })
 
+  // Nginx routes only /collab here, so /metrics is reachable from the private network alone.
   const http: Server = createServer((request, response) => {
+    if (request.url === '/metrics') {
+      metrics.registry
+        .metrics()
+        .then((body) => {
+          response.writeHead(200, { 'content-type': metrics.registry.contentType })
+          response.end(body)
+        })
+        .catch((error: unknown) => {
+          logger.error({ err: error }, 'failed to render metrics')
+          response.writeHead(500).end()
+        })
+      return
+    }
     if (request.url === '/healthz') {
       response.writeHead(200, { 'content-type': 'application/json' })
       response.end(JSON.stringify({ status: 'ok', rooms: rooms.activeRooms }))
@@ -119,18 +138,26 @@ export async function startCollabServer(options: CollabServerOptions): Promise<C
       if (ws.readyState !== WebSocket.OPEN) return
       const frame = toBuffer(data)
       if (!isBinary) {
+        metrics.rejected.inc({ reason: 'not_binary' })
         connection.close(WsCloseCode.malformed, 'binary frames only')
       } else if (frame.byteLength > COLLAB_LIMITS.maxFrameBytes) {
+        metrics.rejected.inc({ reason: 'too_large' })
         connection.close(WsCloseCode.frameTooLarge, 'frame too large')
       } else if (
         !connection.messageBucket.take() ||
         !connection.byteBucket.take(frame.byteLength)
       ) {
         logger.warn({ userId: connection.userId }, 'rate limit exceeded')
+        metrics.rejected.inc({ reason: 'rate_limited' })
         connection.close(WsCloseCode.rateLimited, 'rate limit exceeded')
       } else {
         joined = joined.then((room) => {
-          room?.handleFrame(connection, frame)
+          if (room) {
+            const stop = metrics.frameSeconds.startTimer()
+            room.handleFrame(connection, frame)
+            stop()
+            metrics.frames.inc()
+          }
           return room
         })
       }

@@ -1,0 +1,92 @@
+{
+  "title": "CodeSync",
+  "uid": "codesync",
+  "schemaVersion": 39,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active rooms",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "refId": "A", "expr": "sum(codesync_collab_active_rooms)" }]
+    },
+    {
+      "id": 2,
+      "title": "Connected users",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "refId": "A", "expr": "sum(codesync_collab_connected_users)" }]
+    },
+    {
+      "id": 3,
+      "title": "Server time per update",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "p50",
+          "expr": "histogram_quantile(0.5, sum(rate(codesync_collab_frame_seconds_bucket[5m])) by (le))"
+        },
+        {
+          "refId": "B",
+          "legendFormat": "p95",
+          "expr": "histogram_quantile(0.95, sum(rate(codesync_collab_frame_seconds_bucket[5m])) by (le))"
+        },
+        {
+          "refId": "C",
+          "legendFormat": "p99",
+          "expr": "histogram_quantile(0.99, sum(rate(codesync_collab_frame_seconds_bucket[5m])) by (le))"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Queue length",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{queue}} {{state}}",
+          "expr": "sum by (queue, state) (codesync_queue_jobs)"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Executions by verdict",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{status}}",
+          "expr": "sum by (status) (rate(codesync_executions_total[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Refused client frames",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{reason}}",
+          "expr": "sum by (reason) (rate(codesync_collab_rejected_total[5m]))"
+        }
+      ]
+    }
+  ]
+}

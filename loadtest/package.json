@@ -1,0 +1,29 @@
+{
+  "name": "@codesync/loadtest",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build:k6": "esbuild k6/collab.ts --bundle --format=esm --platform=browser --external:k6 --external:k6/* --banner:js=\"globalThis.crypto ??= { getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256); return a } };\" --outfile=dist/collab.js",
+    "seed": "tsx seed.ts",
+    "local": "tsx local/collab.ts",
+    "report": "tsx report.ts"
+  },
+  "dependencies": {
+    "@codesync/db": "workspace:*",
+    "jsonwebtoken": "9.0.3",
+    "lib0": "0.2.119",
+    "pino": "10.4.0",
+    "ws": "8.22.1",
+    "yjs": "13.6.33"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "9.0.10",
+    "@types/node": "20.19.9",
+    "@types/ws": "8.18.2",
+    "esbuild": "0.28.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

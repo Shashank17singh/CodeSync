@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { AppDeps } from '../app.js'
 import { forbidden, invalid, notFound } from '../lib/errors.js'
 import { loadRoomAccess, requireRoom } from './access.js'
+import { MINUTE, enforceRateLimits } from './auth/rateLimit.js'
 
 const roomParams = z.object({ id: z.uuid() })
 const messageParams = z.object({ id: z.uuid(), messageId: z.uuid() })
@@ -12,6 +13,7 @@ const fileParams = z.object({ id: z.uuid() })
 
 const MAX_COMMENT_CHARS = 4000
 const MAX_ANCHOR_CHARS = 512
+const COMMENTS_PER_USER_PER_MINUTE = 30
 
 const anchorBody = z.object({
   body: z.string().trim().min(1).max(MAX_COMMENT_CHARS),
@@ -52,7 +54,13 @@ const present = <T extends StoredComment>(comment: T) => ({
 })
 
 export function registerChatRoutes(app: FastifyInstance, deps: AppDeps): void {
-  const { prisma, bridge } = deps
+  const { prisma, bridge, limiter } = deps
+
+  // Viewers can comment, and each one fans out to the room and may write a notification.
+  const limitComments = (userId: string) =>
+    enforceRateLimits(limiter, [
+      { key: `comment:${userId}`, limit: COMMENTS_PER_USER_PER_MINUTE, windowMs: MINUTE },
+    ])
 
   const fileRoom = async (fileId: string, userId: string): Promise<string> => {
     const file = await prisma.file.findUnique({
@@ -179,6 +187,7 @@ export function registerChatRoutes(app: FastifyInstance, deps: AppDeps): void {
     const { id } = fileParams.parse(request.params)
     const roomId = await fileRoom(id, request.userId)
     const body = anchorBody.parse(request.body)
+    await limitComments(request.userId)
     const comment = await prisma.comment.create({
       data: {
         fileId: id,
@@ -198,6 +207,7 @@ export function registerChatRoutes(app: FastifyInstance, deps: AppDeps): void {
     const { comment: parent, roomId } = await commentRoom(id, request.userId)
     if (parent.parentId) throw invalid('nested_reply', 'Reply to the thread, not to a reply')
     const { body } = replyBody.parse(request.body)
+    await limitComments(request.userId)
     const created = await prisma.comment.create({
       data: { fileId: parent.fileId, authorId: request.userId, parentId: id, body },
       select: COMMENT_FIELDS,

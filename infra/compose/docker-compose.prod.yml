@@ -1,0 +1,137 @@
+# The application host. The sandbox workers run elsewhere: see docker-compose.executor.yml.
+# Start with: docker compose -f infra/compose/docker-compose.prod.yml --env-file .env.prod up -d
+name: codesync
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: codesync
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: codesync
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [private]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U codesync']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --requirepass
+      - ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    # Published on the private interface only, for the executor host. Firewall it to that host.
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:6379:6379'
+    networks: [private]
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" --no-auth-warning ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: packages/db/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://codesync:${POSTGRES_PASSWORD}@postgres:5432/codesync
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [private]
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: ../../.env.prod
+    environment:
+      DATABASE_URL: postgresql://codesync:${POSTGRES_PASSWORD}@postgres:5432/codesync
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      COOKIE_SECURE: 'true'
+      TRUST_PROXY_HOPS: '1'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks: [private]
+
+  collab:
+    build:
+      context: ../..
+      dockerfile: apps/collab/Dockerfile
+    restart: unless-stopped
+    env_file: ../../.env.prod
+    environment:
+      DATABASE_URL: postgresql://codesync:${POSTGRES_PASSWORD}@postgres:5432/codesync
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      ALLOWED_ORIGINS: ${PUBLIC_WEB_URL}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks: [private]
+
+  nginx:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ${TLS_CERT_DIR:?set TLS_CERT_DIR}:/etc/nginx/certs:ro
+    depends_on: [api, collab]
+    networks: [private, public]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    extra_hosts:
+      - 'executor:${EXECUTOR_PRIVATE_IP:?set EXECUTOR_PRIVATE_IP}'
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks: [private]
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    # Reach it through an SSH tunnel. It is not published through Nginx.
+    ports:
+      - '127.0.0.1:3001:3000'
+    networks: [private]
+
+networks:
+  private: {}
+  public: {}
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:

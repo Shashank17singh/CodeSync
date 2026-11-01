@@ -1,0 +1,24 @@
+# Runs on a separate machine. Never run sandboxes beside the database in production: a container
+# escape here should reach nothing but this disposable host.
+#
+# This host needs Docker with gVisor installed (runsc), and the images from
+# services/executor/build-images.sh. It holds only REDIS_URL, API_URL and the service token.
+name: codesync-executor
+
+services:
+  worker:
+    build:
+      context: ../../services/executor
+    restart: unless-stopped
+    environment:
+      REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+      API_URL: ${API_URL:?set API_URL}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set INTERNAL_SERVICE_TOKEN}
+      SANDBOX_RUNTIME: runsc
+      SANDBOX_REQUIRE_GVISOR: 'true'
+      METRICS_HOST: 0.0.0.0
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:9100:9100'

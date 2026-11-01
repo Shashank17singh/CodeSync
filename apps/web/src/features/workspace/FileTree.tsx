@@ -162,7 +162,9 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
   const parentOf = (node: TreeNode): string =>
     node.kind === 'DIRECTORY' ? node.path : node.path.split('/').slice(0, -1).join('/')
 
+  // Dragging is a shortcut: the Rename action reaches the same result from the keyboard.
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <nav
       aria-label="Files"
       className="flex h-full flex-col gap-1 overflow-y-auto bg-surface p-2"
