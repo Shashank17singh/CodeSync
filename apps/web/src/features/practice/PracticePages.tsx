@@ -81,7 +81,7 @@ export function ProblemListPage() {
             <li key={problem.id}>
               <Link
                 to={`/practice/${problem.slug}`}
-                className="flex min-h-11 flex-wrap items-center gap-2 px-4 py-2.5 transition-colors hover:bg-raised"
+                className="flex min-h-11 flex-wrap items-center gap-2 px-4 py-2.5 hover:bg-raised"
               >
                 <span className="text-sm font-medium">{problem.title}</span>
                 <Badge>{pretty(problem.difficulty)}</Badge>

@@ -75,7 +75,7 @@ export function PresenceSidebar({
                 type="button"
                 aria-pressed={isFollowed}
                 onClick={() => (isFollowed ? onStopFollowing() : onFollow(peer.clientId))}
-                className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-raised ${
+                className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-raised ${
                   isFollowed ? 'bg-accent-soft' : ''
                 }`}
               >
@@ -87,7 +87,7 @@ export function PresenceSidebar({
                     {location ? ` · ${location}` : ''}
                   </span>
                 </span>
-                <span className="shrink-0 text-xs font-medium text-accent">
+                <span className={`shrink-0 text-xs font-medium ${isFollowed ? 'text-ink' : 'text-accent'}`}>
                   {isFollowed ? 'Following' : 'Follow'}
                 </span>
               </button>

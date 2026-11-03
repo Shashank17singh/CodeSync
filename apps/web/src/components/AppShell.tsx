@@ -3,7 +3,7 @@ import { useSession } from '../lib/session'
 import { Button } from './ui'
 
 const linkClass = ({ isActive }: { isActive: boolean }): string =>
-  `inline-flex min-h-8 items-center rounded px-3 text-sm transition-colors ${isActive ? 'bg-raised font-medium text-ink' : 'text-muted hover:text-ink'}`
+  `inline-flex min-h-8 items-center rounded px-3 text-sm ${isActive ? 'bg-raised font-medium text-ink' : 'text-muted hover:text-ink'}`
 
 export function AppShell() {
   const { user, signOut } = useSession()

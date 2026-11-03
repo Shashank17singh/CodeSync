@@ -56,7 +56,7 @@ export function DashboardPage() {
     <li key={room.id}>
       <Link
         to={`/rooms/${room.id}`}
-        className="flex min-h-11 items-center justify-between gap-2 px-4 py-2.5 transition-colors hover:bg-raised"
+        className="flex min-h-11 items-center justify-between gap-2 px-4 py-2.5 hover:bg-raised"
       >
         <span className="truncate text-sm font-medium">{room.name}</span>
         <Badge>{(room.role ?? 'visitor').toLowerCase()}</Badge>
