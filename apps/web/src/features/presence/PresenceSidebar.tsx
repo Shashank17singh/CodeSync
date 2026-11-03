@@ -8,9 +8,9 @@ const STATUS_LABEL: Record<PresenceStatus, string> = {
 }
 
 const STATUS_DOT: Record<PresenceStatus, string> = {
-  active: 'bg-green-600',
-  idle: 'bg-amber-500',
-  away: 'bg-neutral-400',
+  active: 'bg-ok',
+  idle: 'bg-warn',
+  away: 'bg-muted',
 }
 
 interface AvatarProps {
@@ -23,12 +23,12 @@ function Avatar({ initials, color, status }: AvatarProps) {
   return (
     <span
       aria-hidden="true"
-      className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+      className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white"
       style={{ backgroundColor: color }}
     >
       {initials}
       <span
-        className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-neutral-900 ${STATUS_DOT[status]}`}
+        className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-surface ${STATUS_DOT[status]}`}
       />
     </span>
   )
@@ -53,7 +53,7 @@ export function PresenceSidebar({
 }: PresenceSidebarProps) {
   return (
     <section aria-label="Online users" className="flex flex-col gap-2 p-3">
-      <h2 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+      <h2 className="text-sm font-medium text-muted">
         Online ({peers.length + 1})
       </h2>
       <ul className="flex flex-col gap-1">
@@ -75,19 +75,19 @@ export function PresenceSidebar({
                 type="button"
                 aria-pressed={isFollowed}
                 onClick={() => (isFollowed ? onStopFollowing() : onFollow(peer.clientId))}
-                className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-blue-600 dark:hover:bg-neutral-800 ${
-                  isFollowed ? 'bg-blue-50 dark:bg-blue-950' : ''
+                className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-raised ${
+                  isFollowed ? 'bg-accent-soft' : ''
                 }`}
               >
                 <Avatar initials={peer.initials} color={peer.color} status={status} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm">{peer.name}</span>
-                  <span className="block truncate text-xs text-neutral-500">
+                  <span className="block truncate text-xs text-muted">
                     {STATUS_LABEL[status]}
                     {location ? ` · ${location}` : ''}
                   </span>
                 </span>
-                <span className="shrink-0 text-xs text-blue-700 dark:text-blue-300">
+                <span className="shrink-0 text-xs font-medium text-accent">
                   {isFollowed ? 'Following' : 'Follow'}
                 </span>
               </button>

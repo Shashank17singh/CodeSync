@@ -256,7 +256,7 @@ export function ChatPanel({
                 if (event.key === 'Enter' && !event.shiftKey) send(event)
               }}
               placeholder="Message, Markdown works"
-              className="w-full resize-none rounded border border-line bg-surface p-1 text-sm"
+              className="w-full resize-none rounded border border-line-strong bg-deep text-ink p-1 text-sm"
             />
           </label>
           <Button type="submit" variant="primary">

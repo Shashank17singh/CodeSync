@@ -307,7 +307,7 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
       <Link to="/" className="text-sm text-muted underline">
         Rooms
       </Link>
-      <h1 className="truncate font-semibold">{room.name}</h1>
+      <h1 className="truncate font-medium">{room.name}</h1>
       <Badge>{room.role}</Badge>
       {room.lockedAt && <Badge>locked</Badge>}
       <ConnectionBadge state={connection} />
@@ -352,7 +352,7 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
               role="tab"
               aria-selected={phoneTab === tab}
               onClick={() => setPhoneTab(tab)}
-              className={`flex-1 py-2 text-sm ${phoneTab === tab ? 'font-semibold' : 'text-muted'}`}
+              className={`flex-1 py-2 text-sm ${phoneTab === tab ? 'font-medium' : 'text-muted'}`}
             >
               {tab}
               {tab === 'Chat' && unread > 0 ? ` (${unread})` : ''}
@@ -365,7 +365,7 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
             <select
               value={panes[0].active ?? ''}
               onChange={(event) => open(event.target.value, 0)}
-              className="w-full rounded border border-line bg-surface px-2 py-1"
+              className="w-full rounded border border-line-strong bg-deep text-ink px-2 py-1"
             >
               {[...entries]
                 .filter(([, entry]) => entry.kind === 'FILE')

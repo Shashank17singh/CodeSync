@@ -113,7 +113,7 @@ export function ReviewPanel({
           <select
             value={mode}
             onChange={(event) => setMode(event.target.value)}
-            className="rounded border border-line bg-surface px-2 py-1 text-sm"
+            className="rounded border border-line-strong bg-deep text-ink px-2 py-1 text-sm"
           >
             {MODES.map(({ value, label }) => (
               <option key={value} value={value}>

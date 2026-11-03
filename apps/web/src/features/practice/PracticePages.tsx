@@ -21,7 +21,7 @@ const PlainEditor = lazy(async () => ({
 const POLL_MS = 1_500
 const SECOND_MS = 1_000
 const JUDGING = new Set(['PENDING', 'JUDGING'])
-const inputClass = 'rounded border border-line bg-surface px-3 py-2 text-sm'
+const inputClass = 'rounded border border-line-strong bg-deep px-3 py-2 text-sm text-ink'
 
 const pretty = (value: string): string => value.replaceAll('_', ' ').toLowerCase()
 
@@ -51,7 +51,7 @@ export function ProblemListPage() {
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_16rem]">
       <section aria-labelledby="problems" className="flex flex-col gap-3">
-        <h1 id="problems" className="text-xl font-semibold">
+        <h1 id="problems" className="text-2xl font-medium">
           Problems
         </h1>
         <div className="flex flex-wrap items-end gap-2">
@@ -76,12 +76,12 @@ export function ProblemListPage() {
         {problems.data?.problems.length === 0 && (
           <p className="text-sm text-muted">No problems match these filters.</p>
         )}
-        <ul className="flex flex-col gap-2">
+        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
           {problems.data?.problems.map((problem) => (
             <li key={problem.id}>
               <Link
                 to={`/practice/${problem.slug}`}
-                className="flex flex-wrap items-center gap-2 rounded border border-line bg-surface px-3 py-2 hover:bg-raised"
+                className="flex min-h-11 flex-wrap items-center gap-2 px-4 py-2.5 transition-colors hover:bg-raised"
               >
                 <span className="text-sm font-medium">{problem.title}</span>
                 <Badge>{pretty(problem.difficulty)}</Badge>
@@ -97,7 +97,7 @@ export function ProblemListPage() {
       </section>
       <aside className="flex flex-col gap-6">
         <section aria-labelledby="contests">
-          <h2 id="contests" className="mb-2 font-semibold">
+          <h2 id="contests" className="mb-2 font-medium">
             Contests
           </h2>
           {contests.data?.contests.length === 0 && (
@@ -114,7 +114,7 @@ export function ProblemListPage() {
           </ul>
         </section>
         <section aria-labelledby="leaderboards">
-          <h2 id="leaderboards" className="mb-2 font-semibold">
+          <h2 id="leaderboards" className="mb-2 font-medium">
             Leaderboards
           </h2>
           {sets.data?.problemSets.length === 0 && (
@@ -176,7 +176,7 @@ export function ProblemPage() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <article className="flex min-w-0 flex-col gap-3">
-        <h1 className="text-xl font-semibold">{detail.title}</h1>
+        <h1 className="text-xl font-medium">{detail.title}</h1>
         <Badge>{pretty(detail.difficulty)}</Badge>
         <Markdown>{detail.statementMd}</Markdown>
         {[
@@ -185,18 +185,18 @@ export function ProblemPage() {
           ['Constraints', detail.constraints],
         ].map(([title, body]) => (
           <section key={title}>
-            <h2 className="font-semibold">{title}</h2>
+            <h2 className="font-medium">{title}</h2>
             <Markdown>{body as string}</Markdown>
           </section>
         ))}
         {detail.samples.map((sample) => (
           <section key={sample.ordinal} className="grid gap-2 sm:grid-cols-2">
             <div>
-              <h2 className="text-sm font-semibold">Sample input {sample.ordinal}</h2>
+              <h2 className="text-sm font-medium">Sample input {sample.ordinal}</h2>
               <pre className="overflow-x-auto rounded bg-raised p-2 text-xs">{sample.input}</pre>
             </div>
             <div>
-              <h2 className="text-sm font-semibold">Sample output {sample.ordinal}</h2>
+              <h2 className="text-sm font-medium">Sample output {sample.ordinal}</h2>
               <pre className="overflow-x-auto rounded bg-raised p-2 text-xs">{sample.output}</pre>
             </div>
           </section>
@@ -314,7 +314,7 @@ export function LeaderboardPage() {
   })
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-xl font-semibold">Leaderboard</h1>
+      <h1 className="text-xl font-medium">Leaderboard</h1>
       <ErrorNotice error={board.error} />
       {board.isPending && <Loading />}
       {board.data && <Standings rows={board.data.leaderboard} users={board.data.users} />}
@@ -366,13 +366,13 @@ export function ContestPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">{detail.title}</h1>
+      <h1 className="text-xl font-medium">{detail.title}</h1>
       <p role="timer" className="font-mono text-lg">
         {clock}
       </p>
       {now >= starts && (
         <section aria-labelledby="contest-problems">
-          <h2 id="contest-problems" className="mb-1 font-semibold">
+          <h2 id="contest-problems" className="mb-1 font-medium">
             Problems
           </h2>
           <ul className="flex flex-col gap-1">
@@ -390,7 +390,7 @@ export function ContestPage() {
         </section>
       )}
       <section aria-labelledby="standings" className="flex flex-col gap-2">
-        <h2 id="standings" className="font-semibold">
+        <h2 id="standings" className="font-medium">
           Standings {board.data?.frozen && <Badge>frozen</Badge>}
         </h2>
         <ErrorNotice error={board.error} />

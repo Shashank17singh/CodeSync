@@ -128,7 +128,7 @@ export function PresenceWorkspace({ session, self, theme = 'vs' }: PresenceWorks
 
   return (
     <div className="flex h-full min-h-0">
-      <nav aria-label="Files" className="w-48 shrink-0 border-r border-neutral-200 p-2">
+      <nav aria-label="Files" className="w-48 shrink-0 border-r border-line p-2">
         <ul>
           {files.map(([id, entry]) => (
             <li key={id}>
@@ -137,8 +137,8 @@ export function PresenceWorkspace({ session, self, theme = 'vs' }: PresenceWorks
                 disabled={!editor}
                 aria-current={id === activeFileId ? 'true' : undefined}
                 onClick={() => open(id)}
-                className={`w-full truncate rounded px-2 py-1 text-left text-sm hover:bg-neutral-100 disabled:opacity-50 ${
-                  id === activeFileId ? 'bg-neutral-200 font-medium' : ''
+                className={`w-full truncate rounded px-2 py-1 text-left text-sm hover:bg-raised disabled:opacity-50 ${
+                  id === activeFileId ? 'bg-raised font-medium' : ''
                 }`}
               >
                 {entry.path}
@@ -151,7 +151,7 @@ export function PresenceWorkspace({ session, self, theme = 'vs' }: PresenceWorks
         {/* Monaco renders nothing until a model is set, so the hint fills the empty state. */}
         <div ref={container} data-testid="editor" className="absolute inset-0" />
         {!activeFileId && (
-          <p role={loadFailed ? 'alert' : 'status'} className="p-4 text-sm text-neutral-500">
+          <p role={loadFailed ? 'alert' : 'status'} className="p-4 text-sm text-muted">
             {loadFailed
               ? 'The editor failed to load. Reload the page to try again.'
               : editor
@@ -160,7 +160,7 @@ export function PresenceWorkspace({ session, self, theme = 'vs' }: PresenceWorks
           </p>
         )}
       </div>
-      <aside className="w-64 shrink-0 overflow-y-auto border-l border-neutral-200">
+      <aside className="w-64 shrink-0 overflow-y-auto border-l border-line">
         <PresenceSidebar
           self={self}
           peers={peers}

@@ -13,11 +13,12 @@ import { api } from '../../lib/api'
 import { buildTree, type TreeNode } from './model'
 
 const FILE_BADGES: Record<string, { label: string; className: string }> = {
-  py: { label: 'Py', className: 'text-sky-700 dark:text-sky-400' },
-  cpp: { label: 'C+', className: 'text-indigo-700 dark:text-indigo-400' },
-  cc: { label: 'C+', className: 'text-indigo-700 dark:text-indigo-400' },
-  java: { label: 'Jv', className: 'text-orange-800 dark:text-orange-400' },
-  js: { label: 'JS', className: 'text-yellow-800 dark:text-yellow-400' },
+  // The letters tell files apart; colour is kept for people and measurements.
+  py: { label: 'Py', className: 'text-ink-2' },
+  cpp: { label: 'C+', className: 'text-ink-2' },
+  cc: { label: 'C+', className: 'text-ink-2' },
+  java: { label: 'Jv', className: 'text-ink-2' },
+  js: { label: 'JS', className: 'text-ink-2' },
   md: { label: 'Md', className: 'text-muted' },
 }
 
@@ -203,7 +204,7 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
       onDrop={(event) => onDrop(event, '')}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Files</h2>
+        <h2 className="text-xs font-medium tracking-wide text-muted uppercase">Files</h2>
         {canWrite && (
           <span className="flex gap-1">
             <Button
@@ -234,7 +235,7 @@ export function FileTree({ entries, projectId, canWrite, activeFileId, onOpen }:
           onKeyDown={onMenuKey}
           aria-label={`Actions for ${menu.node.path}`}
           style={{ left: menu.x, top: menu.y }}
-          className="fixed z-20 flex min-w-36 flex-col rounded border border-line bg-surface p-1 shadow-lg"
+          className="fixed z-20 flex min-w-36 flex-col rounded border border-line-strong bg-raised p-1"
         >
           {(
             [

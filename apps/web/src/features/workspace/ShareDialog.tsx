@@ -62,7 +62,7 @@ export function ShareDialog({ roomId, profanityFilter, open, onClose }: ShareDia
           <select
             value={role}
             onChange={(event) => setRole(event.target.value)}
-            className="rounded border border-line bg-surface px-3 py-2 font-normal"
+            className="rounded border border-line-strong bg-deep text-ink px-3 py-2 font-normal"
           >
             <option value="EDITOR">Edit</option>
             <option value="VIEWER">View</option>

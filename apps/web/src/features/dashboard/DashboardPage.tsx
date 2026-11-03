@@ -56,10 +56,10 @@ export function DashboardPage() {
     <li key={room.id}>
       <Link
         to={`/rooms/${room.id}`}
-        className="flex items-center justify-between gap-2 rounded border border-line bg-surface px-3 py-2 hover:bg-raised"
+        className="flex min-h-11 items-center justify-between gap-2 px-4 py-2.5 transition-colors hover:bg-raised"
       >
         <span className="truncate text-sm font-medium">{room.name}</span>
-        <Badge>{room.role ?? 'visitor'}</Badge>
+        <Badge>{(room.role ?? 'visitor').toLowerCase()}</Badge>
       </Link>
     </li>
   )
@@ -69,14 +69,14 @@ export function DashboardPage() {
       <div className="flex flex-col gap-6">
         {recent.length > 0 && (
           <section aria-labelledby="recent-rooms">
-            <h1 id="recent-rooms" className="mb-2 font-semibold">
+            <h1 id="recent-rooms" className="mb-3 text-2xl font-medium">
               Recent
             </h1>
-            <ul className="flex flex-col gap-2">{recent.map(roomLink)}</ul>
+            <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">{recent.map(roomLink)}</ul>
           </section>
         )}
         <section aria-labelledby="my-rooms">
-          <h2 id="my-rooms" className="mb-2 font-semibold">
+          <h2 id="my-rooms" className="mb-3 text-lg font-medium">
             My rooms
           </h2>
           {rooms.isPending && <Loading />}
@@ -84,12 +84,14 @@ export function DashboardPage() {
           {rooms.isSuccess && list.length === 0 && (
             <p className="text-sm text-muted">No rooms yet. Create one to start coding.</p>
           )}
-          <ul className="flex flex-col gap-2">{list.map(roomLink)}</ul>
+          {list.length > 0 && (
+            <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">{list.map(roomLink)}</ul>
+          )}
         </section>
       </div>
       <div className="flex flex-col gap-6">
-        <form onSubmit={onCreate} className="flex flex-col gap-3">
-          <h2 className="font-semibold">Create a room</h2>
+        <form onSubmit={onCreate} className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4">
+          <h2 className="font-medium">Create a room</h2>
           <Field
             label="Room name"
             required
@@ -102,7 +104,7 @@ export function DashboardPage() {
             <select
               value={template}
               onChange={(event) => setTemplate(event.target.value)}
-              className="rounded border border-line bg-surface px-3 py-2 font-normal"
+              className="rounded border border-line-strong bg-deep px-3 py-2 font-normal"
             >
               {TEMPLATES.map(({ value, label }) => (
                 <option key={value} value={value}>
@@ -116,8 +118,8 @@ export function DashboardPage() {
             Create room
           </Button>
         </form>
-        <form onSubmit={onJoin} className="flex flex-col gap-3">
-          <h2 className="font-semibold">Join by link</h2>
+        <form onSubmit={onJoin} className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4">
+          <h2 className="font-medium">Join by link</h2>
           <Field
             label="Invite link"
             required

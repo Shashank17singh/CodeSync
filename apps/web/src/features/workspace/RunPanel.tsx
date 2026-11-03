@@ -14,9 +14,10 @@ import { formatBytes } from './model'
 const POLL_MS = 2_000
 const UNFINISHED = new Set(['QUEUED', 'RUNNING'])
 
+// The terminal sits on the deepest step of the theme. xterm needs hex, so these mirror --deep and --ink.
 const TERMINAL_THEMES = {
-  dark: { background: '#171b1f', foreground: '#e6e9ec' },
-  light: { background: '#ffffff', foreground: '#1b1f23', cursor: '#1b1f23' },
+  dark: { background: '#06080b', foreground: '#eceff2', cursor: '#eceff2' },
+  light: { background: '#f5f3ef', foreground: '#17130f', cursor: '#17130f' },
 }
 
 const forTerminal = (text: string): string => text.replace(/\r?\n/g, '\r\n')
@@ -181,7 +182,7 @@ export function RunPanel({
           <select
             value={selected}
             onChange={(event) => setLanguage(event.target.value as Language)}
-            className="rounded border border-line bg-surface px-2 py-1 text-sm"
+            className="rounded border border-line-strong bg-deep text-ink px-2 py-1 text-sm"
           >
             <option value="" disabled>
               Language

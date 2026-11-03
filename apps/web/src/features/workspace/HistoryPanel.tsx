@@ -143,7 +143,7 @@ export function HistoryPanel({
               value={label}
               placeholder="Checkpoint name"
               onChange={(event) => setLabel(event.target.value)}
-              className="w-full rounded border border-line bg-surface px-2 py-1 text-sm"
+              className="w-full rounded border border-line-strong bg-deep text-ink px-2 py-1 text-sm"
             />
           </label>
           <Button type="submit" disabled={checkpoint.isPending}>

@@ -17,7 +17,7 @@ const SHORTCUTS = [
   ['Undo your own edits', 'Ctrl+Z'],
 ]
 
-const inputClass = 'rounded border border-line bg-surface px-3 py-2 text-sm'
+const inputClass = 'rounded border border-line-strong bg-deep text-ink px-3 py-2 text-sm'
 
 export function SettingsPage() {
   const preferences = usePreferences()
@@ -39,12 +39,12 @@ export function SettingsPage() {
 
   return (
     <div className="flex max-w-lg flex-col gap-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
+      <h1 className="text-xl font-medium">Settings</h1>
       <p className="text-sm text-muted">{useSession((state) => state.user?.email)}</p>
       <ErrorNotice error={error} />
 
       <section className="flex flex-col gap-3" aria-labelledby="appearance">
-        <h2 id="appearance" className="font-semibold">
+        <h2 id="appearance" className="font-medium">
           Appearance
         </h2>
         <label className="flex flex-col gap-1 text-sm font-medium">
@@ -62,7 +62,7 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="editor">
-        <h2 id="editor" className="font-semibold">
+        <h2 id="editor" className="font-medium">
           Editor
         </h2>
         <label className="flex flex-col gap-1 text-sm font-medium">
@@ -98,7 +98,7 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="keybindings">
-        <h2 id="keybindings" className="font-semibold">
+        <h2 id="keybindings" className="font-medium">
           Keybindings
         </h2>
         <label className="flex flex-col gap-1 text-sm font-medium">

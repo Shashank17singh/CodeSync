@@ -19,8 +19,8 @@ function AuthCard({ title, children }: { title: string; children: ReactNode }) {
     <main className="flex min-h-full items-center justify-center p-4">
       <section className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-line bg-surface p-6">
         <div>
-          <p className="text-sm font-semibold text-accent">CodeSync</p>
-          <h1 className="text-xl font-semibold">{title}</h1>
+          <p className="text-sm font-medium text-ink">CodeSync</p>
+          <h1 className="text-xl font-medium">{title}</h1>
         </div>
         {children}
       </section>

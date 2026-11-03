@@ -41,7 +41,7 @@ function Reply({ threadId, onSent }: { threadId: string; onSent: () => void }) {
             value={body}
             placeholder="Reply"
             onChange={(event) => setBody(event.target.value)}
-            className="w-full rounded border border-line bg-surface px-2 py-1 text-sm"
+            className="w-full rounded border border-line-strong bg-deep text-ink px-2 py-1 text-sm"
           />
         </label>
         <Button type="submit">Reply</Button>
@@ -141,7 +141,7 @@ export function CommentsPanel({
           required
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          className="resize-none rounded border border-line bg-surface p-1 text-sm"
+          className="resize-none rounded border border-line-strong bg-deep text-ink p-1 text-sm"
         />
         <Button type="submit">Add comment</Button>
       </form>

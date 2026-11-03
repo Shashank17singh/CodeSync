@@ -6,43 +6,69 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-raised: var(--raised);
+  --color-deep: var(--deep);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-cool: var(--cool);
+  --color-cool-soft: var(--cool-soft);
   --color-danger: var(--danger);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
+  --font-sans: 'Host Grotesk Variable', 'Host Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Mono', ui-monospace, Consolas, monospace;
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
 }
 
+/* Paper: the light colourway. Amber marks a person and the primary action; cool marks what the system measured. */
 :root {
-  --canvas: #f6f7f8;
-  --surface: #ffffff;
-  --raised: #eceef0;
-  --line: #d9dde1;
-  --ink: #1b1f23;
-  --muted: #5b6570;
-  --accent: #0f766e;
-  --on-accent: #ffffff;
-  --danger: #b42318;
-  --ok: #15803d;
-  --warn: #a15c07;
+  --canvas: oklch(98% 0.006 85);
+  --surface: oklch(99.4% 0.004 85);
+  --raised: oklch(94.5% 0.008 85);
+  --deep: oklch(96.5% 0.006 85);
+  --line: oklch(88% 0.01 80);
+  --line-strong: oklch(70% 0.012 75);
+  --ink: oklch(19% 0.01 60);
+  --ink-2: oklch(32% 0.01 60);
+  --muted: oklch(45% 0.012 65);
+  --accent: oklch(54% 0.14 70);
+  --on-accent: oklch(99% 0.006 85);
+  --accent-soft: oklch(93% 0.05 80);
+  --cool: oklch(52% 0.14 250);
+  --cool-soft: oklch(93% 0.035 245);
+  --danger: oklch(52% 0.18 27);
+  --ok: oklch(50% 0.13 150);
+  --warn: oklch(55% 0.13 75);
   color-scheme: light;
 }
 
+/* Graphite: the dark colourway, three steps of one neutral ground. */
 [data-theme='dark'] {
-  --canvas: #0f1215;
-  --surface: #171b1f;
-  --raised: #22282e;
-  --line: #2e353c;
-  --ink: #e6e9ec;
-  --muted: #98a2ad;
-  --accent: #2dd4bf;
-  --on-accent: #06211e;
-  --danger: #f97066;
-  --ok: #4ade80;
-  --warn: #fbbf24;
+  --canvas: oklch(17% 0.008 250);
+  --surface: oklch(21% 0.009 250);
+  --raised: oklch(26% 0.01 250);
+  --deep: oklch(13.5% 0.007 250);
+  --line: oklch(31% 0.01 250);
+  --line-strong: oklch(48% 0.012 250);
+  --ink: oklch(95% 0.005 250);
+  --ink-2: oklch(83% 0.008 250);
+  --muted: oklch(71% 0.01 250);
+  --accent: oklch(82% 0.15 80);
+  --on-accent: oklch(18% 0.04 75);
+  --accent-soft: oklch(29% 0.05 80);
+  --cool: oklch(77% 0.12 245);
+  --cool-soft: oklch(29% 0.05 245);
+  --danger: oklch(70% 0.17 25);
+  --ok: oklch(76% 0.15 150);
+  --warn: oklch(80% 0.13 85);
   color-scheme: dark;
 }
 
@@ -52,9 +78,27 @@ body,
   height: 100%;
 }
 
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background: var(--canvas);
   color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 28%, transparent);
 }
 
 :focus-visible {
@@ -104,7 +148,7 @@ body {
 }
 
 .cs-markdown code {
-  font-family: ui-monospace, Consolas, monospace;
+  font-family: var(--font-mono);
 }
 
 .cs-markdown a {
@@ -123,5 +167,5 @@ body {
 .cs-markdown h2,
 .cs-markdown h3 {
   margin: 0.75rem 0 0.25rem;
-  font-weight: 600;
+  font-weight: 500;
 }
