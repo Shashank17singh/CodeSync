@@ -1,21 +1,6 @@
-<div align="center">
+# CodeSync
 
-# CodeSync - Real-Time Collaborative Code Editor
-
-**A browser-based code editor where a whole room types in the same file, with live cursors, chat, version history, AI code review, sandboxed execution and an online judge.**
-
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Yjs](https://img.shields.io/badge/Yjs-CRDT-30BCED?style=for-the-badge&logoColor=white)](https://yjs.dev/)
-[![Fastify](https://img.shields.io/badge/Fastify-5-000000?style=for-the-badge&logo=fastify&logoColor=white)](https://fastify.dev/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![Docker](https://img.shields.io/badge/Docker-gVisor-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://gvisor.dev/)
-[![Playwright](https://img.shields.io/badge/Playwright-Tested-2EAD33?style=for-the-badge&logoColor=white)](https://playwright.dev/)
-
-</div>
-
----
+A browser-based code editor where a whole room types in the same file, with live cursors, chat, version history, AI code review, sandboxed execution and an online judge.
 
 ## Overview
 
