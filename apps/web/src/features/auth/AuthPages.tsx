@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Navigate, useLocation, useNavigate, type Location } from 'react-router'
-import { Button, ErrorNotice, Field, Loading } from '../../components/ui'
+import { Button, buttonClass, ErrorNotice, Field, Loading } from '../../components/ui'
 import { api, ApiRequestError, refreshSession } from '../../lib/api'
 import { useSession } from '../../lib/session'
 
@@ -86,11 +86,11 @@ export function LoginPage() {
         </Button>
       </form>
       <div className="flex gap-2">
-        <a href="/api/v1/auth/oauth/github" className="flex-1">
-          <Button className="w-full">GitHub</Button>
+        <a href="/api/v1/auth/oauth/github" className={`${buttonClass()} flex-1`}>
+          GitHub
         </a>
-        <a href="/api/v1/auth/oauth/google" className="flex-1">
-          <Button className="w-full">Google</Button>
+        <a href="/api/v1/auth/oauth/google" className={`${buttonClass()} flex-1`}>
+          Google
         </a>
       </div>
       <p className="flex justify-between text-sm text-muted">

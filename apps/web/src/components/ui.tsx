@@ -19,14 +19,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof BUTTON_STYLES
 }
 
+// Also styles links that look like buttons, since a button inside a link is invalid markup.
+export const buttonClass = (variant: keyof typeof BUTTON_STYLES = 'secondary'): string =>
+  `inline-flex min-h-8 items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-55 ${BUTTON_STYLES[variant]}`
+
 export function Button({ variant = 'secondary', className = '', ...props }: ButtonProps) {
-  return (
-    <button
-      type="button"
-      {...props}
-      className={`inline-flex min-h-8 items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-55 ${BUTTON_STYLES[variant]} ${className}`}
-    />
-  )
+  return <button type="button" {...props} className={`${buttonClass(variant)} ${className}`} />
 }
 
 export interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {

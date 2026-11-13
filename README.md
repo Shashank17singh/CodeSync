@@ -253,6 +253,7 @@ One server runs everything except code execution, judging and AI review, which s
 - Restoring a snapshot is undone with a button, not Ctrl+Z, because Yjs undo only tracks a user's own edits.
 - Pushing a snapshot to GitHub is not built. Zip export is.
 - Accessibility has passed an automated scan and keyboard tests, but no one has tested it with a screen reader.
+- A partial code review raised three issues that are not yet confirmed or fixed. Zip import trusts the sizes an archive declares about itself. Invite emails have no rate limit. A login token renewed at the same moment as a password reset may outlive the reset.
 
 ---
 

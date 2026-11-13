@@ -344,54 +344,56 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
     return (
       <div className="flex h-dvh flex-col">
         {topBar}
-        <div role="tablist" aria-label="View" className="flex border-b border-line bg-surface">
-          {(['Code', 'Chat'] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              role="tab"
-              aria-selected={phoneTab === tab}
-              onClick={() => setPhoneTab(tab)}
-              className={`flex-1 py-2 text-sm ${phoneTab === tab ? 'font-medium' : 'text-muted'}`}
-            >
-              {tab}
-              {tab === 'Chat' && unread > 0 ? ` (${unread})` : ''}
-            </button>
-          ))}
-        </div>
-        <div className={phoneTab === 'Code' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}>
-          <label className="p-2 text-sm">
-            <span className="sr-only">File</span>
-            <select
-              value={panes[0].active ?? ''}
-              onChange={(event) => open(event.target.value, 0)}
-              className="w-full rounded border border-line-strong bg-deep text-ink px-2 py-1"
-            >
-              {[...entries]
-                .filter(([, entry]) => entry.kind === 'FILE')
-                .map(([id, entry]) => (
-                  <option key={id} value={id}>
-                    {entry.path}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <div className="min-h-0 flex-1">
-            <EditorPane
-              session={session}
-              fileId={panes[0].active}
-              readOnly
-              peers={peers}
-              markers={firstMarkers}
-              onEditor={setFirstEditor}
-              onRunKey={onRunKey}
-              onGlyphClick={showComments}
-            />
+        <main className="flex min-h-0 flex-1 flex-col">
+          <div role="tablist" aria-label="View" className="flex border-b border-line bg-surface">
+            {(['Code', 'Chat'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={phoneTab === tab}
+                onClick={() => setPhoneTab(tab)}
+                className={`flex-1 py-2 text-sm ${phoneTab === tab ? 'font-medium' : 'text-muted'}`}
+              >
+                {tab}
+                {tab === 'Chat' && unread > 0 ? ` (${unread})` : ''}
+              </button>
+            ))}
           </div>
-        </div>
-        <div className={phoneTab === 'Chat' ? 'min-h-0 flex-1 bg-surface' : 'hidden'}>
-          {chat(phoneTab === 'Chat')}
-        </div>
+          <div className={phoneTab === 'Code' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}>
+            <label className="p-2 text-sm">
+              <span className="sr-only">File</span>
+              <select
+                value={panes[0].active ?? ''}
+                onChange={(event) => open(event.target.value, 0)}
+                className="w-full rounded border border-line-strong bg-deep text-ink px-2 py-1"
+              >
+                {[...entries]
+                  .filter(([, entry]) => entry.kind === 'FILE')
+                  .map(([id, entry]) => (
+                    <option key={id} value={id}>
+                      {entry.path}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <div className="min-h-0 flex-1">
+              <EditorPane
+                session={session}
+                fileId={panes[0].active}
+                readOnly
+                peers={peers}
+                markers={firstMarkers}
+                onEditor={setFirstEditor}
+                onRunKey={onRunKey}
+                onGlyphClick={showComments}
+              />
+            </div>
+          </div>
+          <div className={phoneTab === 'Chat' ? 'min-h-0 flex-1 bg-surface' : 'hidden'}>
+            {chat(phoneTab === 'Chat')}
+          </div>
+        </main>
       </div>
     )
   }
@@ -399,167 +401,169 @@ function Workspace({ room, session, self, projectId }: WorkspaceProps) {
   return (
     <div className="flex h-dvh flex-col">
       {topBar}
-      <Group orientation="horizontal" className="min-h-0 flex-1">
-        <Panel id="files" defaultSize="18" minSize="10">
-          <FileTree
-            entries={entries}
-            projectId={projectId}
-            canWrite={canEdit}
-            activeFileId={activeFileId}
-            onOpen={(fileId) => open(fileId)}
-          />
-        </Panel>
-        <Separator className="w-1 bg-line" />
-        <Panel id="center" defaultSize="56" minSize="30">
-          <Group orientation="vertical">
-            <Panel id="editors" defaultSize="70" minSize="20">
-              <Group orientation="horizontal">
-                <Panel id="first-editor" minSize="20">
-                  <div className="flex h-full min-h-0 flex-col bg-surface">
-                    <TabStrip
-                      tabs={panes[0]}
-                      pathOf={pathOf}
-                      onSelect={(fileId) => open(fileId, 0)}
-                      onClose={(fileId) => updatePane(0, (tabs) => closeTab(tabs, fileId))}
-                    />
-                    <div className="min-h-0 flex-1">
-                      <ErrorBoundary fallback="The editor stopped working.">
-                        <EditorPane
-                          session={session}
-                          fileId={panes[0].active}
-                          readOnly={!canEdit}
-                          peers={peers}
-                          markers={firstMarkers}
-                          onEditor={setFirstEditor}
-                          onFocus={() => setFocused(0)}
-                          onRunKey={onRunKey}
-                          onGlyphClick={showComments}
-                        />
-                      </ErrorBoundary>
-                    </div>
-                  </div>
-                </Panel>
-                {split && (
-                  <>
-                    <Separator className="w-1 bg-line" />
-                    <Panel id="second-editor" minSize="20">
-                      <div className="flex h-full min-h-0 flex-col bg-surface">
-                        <TabStrip
-                          tabs={panes[1]}
-                          pathOf={pathOf}
-                          onSelect={(fileId) => open(fileId, 1)}
-                          onClose={(fileId) => updatePane(1, (tabs) => closeTab(tabs, fileId))}
-                        />
-                        <div className="min-h-0 flex-1">
+      <main className="flex min-h-0 flex-1">
+        <Group orientation="horizontal" className="min-h-0 flex-1">
+          <Panel id="files" defaultSize="18" minSize="10">
+            <FileTree
+              entries={entries}
+              projectId={projectId}
+              canWrite={canEdit}
+              activeFileId={activeFileId}
+              onOpen={(fileId) => open(fileId)}
+            />
+          </Panel>
+          <Separator className="w-1 bg-line" />
+          <Panel id="center" defaultSize="56" minSize="30">
+            <Group orientation="vertical">
+              <Panel id="editors" defaultSize="70" minSize="20">
+                <Group orientation="horizontal">
+                  <Panel id="first-editor" minSize="20">
+                    <div className="flex h-full min-h-0 flex-col bg-surface">
+                      <TabStrip
+                        tabs={panes[0]}
+                        pathOf={pathOf}
+                        onSelect={(fileId) => open(fileId, 0)}
+                        onClose={(fileId) => updatePane(0, (tabs) => closeTab(tabs, fileId))}
+                      />
+                      <div className="min-h-0 flex-1">
+                        <ErrorBoundary fallback="The editor stopped working.">
                           <EditorPane
                             session={session}
-                            fileId={panes[1].active}
+                            fileId={panes[0].active}
                             readOnly={!canEdit}
                             peers={peers}
-                            markers={secondMarkers}
-                            onEditor={setSecondEditor}
-                            onFocus={() => setFocused(1)}
+                            markers={firstMarkers}
+                            onEditor={setFirstEditor}
+                            onFocus={() => setFocused(0)}
                             onRunKey={onRunKey}
                             onGlyphClick={showComments}
                           />
-                        </div>
+                        </ErrorBoundary>
                       </div>
-                    </Panel>
-                  </>
-                )}
-              </Group>
-            </Panel>
-            <Separator className="h-1 bg-line" />
-            <Panel id="run" defaultSize="30" minSize="12">
-              <RunPanel
-                session={session}
-                roomId={room.id}
-                projectId={projectId}
-                canRun={canEdit}
-                entries={entries}
-                activeFileId={activeFileId}
-                runRef={runRef}
-              />
-            </Panel>
-          </Group>
-        </Panel>
-        <Separator className="w-1 bg-line" />
-        <Panel id="right" defaultSize="26" minSize="16">
-          <div className="flex h-full min-h-0 flex-col bg-surface">
-            <div
-              role="tablist"
-              aria-label="Side panel"
-              className="flex overflow-x-auto border-b border-line"
-            >
-              {RIGHT_TABS.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  role="tab"
-                  aria-selected={rightTab === tab}
-                  tabIndex={rightTab === tab ? 0 : -1}
-                  onClick={() => setRightTab(tab)}
-                  onKeyDown={onTabKey}
-                  className={`shrink-0 px-2 py-1.5 text-sm ${
-                    rightTab === tab ? 'border-b-2 border-accent font-medium' : 'text-muted'
-                  }`}
-                >
-                  {tab}
-                  {tab === 'Chat' && unread > 0 ? ` (${unread})` : ''}
-                </button>
-              ))}
-            </div>
-            {/* Panels stay mounted, so chat keeps its history and unread count while hidden. */}
-            <div className="min-h-0 flex-1">
-              <div hidden={rightTab !== 'Users'} className="h-full overflow-y-auto">
-                <PresenceSidebar
-                  self={{ userId: self.id, name: self.displayName }}
-                  peers={peers}
-                  filePath={pathOf}
-                  following={following}
-                  onFollow={(clientId) => follow?.follow(clientId)}
-                  onStopFollowing={() => follow?.stop()}
-                />
-              </div>
-              <div hidden={rightTab !== 'Chat'} className="h-full">
-                {chat(rightTab === 'Chat')}
-              </div>
-              <div hidden={rightTab !== 'Comments'} className="h-full">
-                <CommentsPanel
-                  session={session}
-                  fileId={activeFileId}
-                  selfId={self.id}
-                  isOwner={isOwner}
-                  names={names}
-                  editor={activeEditor}
-                  onLines={onLines}
-                />
-              </div>
-              <div hidden={rightTab !== 'AI Review'} className="h-full">
-                <ReviewPanel
+                    </div>
+                  </Panel>
+                  {split && (
+                    <>
+                      <Separator className="w-1 bg-line" />
+                      <Panel id="second-editor" minSize="20">
+                        <div className="flex h-full min-h-0 flex-col bg-surface">
+                          <TabStrip
+                            tabs={panes[1]}
+                            pathOf={pathOf}
+                            onSelect={(fileId) => open(fileId, 1)}
+                            onClose={(fileId) => updatePane(1, (tabs) => closeTab(tabs, fileId))}
+                          />
+                          <div className="min-h-0 flex-1">
+                            <EditorPane
+                              session={session}
+                              fileId={panes[1].active}
+                              readOnly={!canEdit}
+                              peers={peers}
+                              markers={secondMarkers}
+                              onEditor={setSecondEditor}
+                              onFocus={() => setFocused(1)}
+                              onRunKey={onRunKey}
+                              onGlyphClick={showComments}
+                            />
+                          </div>
+                        </div>
+                      </Panel>
+                    </>
+                  )}
+                </Group>
+              </Panel>
+              <Separator className="h-1 bg-line" />
+              <Panel id="run" defaultSize="30" minSize="12">
+                <RunPanel
                   session={session}
                   roomId={room.id}
                   projectId={projectId}
-                  fileId={activeFileId}
-                  path={activeFileId ? pathOf(activeFileId) : undefined}
-                  canEdit={canEdit}
-                  editor={activeEditor}
-                  onFindings={onFindings}
+                  canRun={canEdit}
+                  entries={entries}
+                  activeFileId={activeFileId}
+                  runRef={runRef}
                 />
+              </Panel>
+            </Group>
+          </Panel>
+          <Separator className="w-1 bg-line" />
+          <Panel id="right" defaultSize="26" minSize="16">
+            <div className="flex h-full min-h-0 flex-col bg-surface">
+              <div
+                role="tablist"
+                aria-label="Side panel"
+                className="flex overflow-x-auto border-b border-line"
+              >
+                {RIGHT_TABS.map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={rightTab === tab}
+                    tabIndex={rightTab === tab ? 0 : -1}
+                    onClick={() => setRightTab(tab)}
+                    onKeyDown={onTabKey}
+                    className={`shrink-0 px-2 py-1.5 text-sm ${
+                      rightTab === tab ? 'border-b-2 border-accent font-medium' : 'text-muted'
+                    }`}
+                  >
+                    {tab}
+                    {tab === 'Chat' && unread > 0 ? ` (${unread})` : ''}
+                  </button>
+                ))}
               </div>
-              <div hidden={rightTab !== 'History'} className="h-full">
-                <HistoryPanel
-                  session={session}
-                  projectId={projectId}
-                  fileId={activeFileId}
-                  canEdit={canEdit}
-                  onBlame={onBlame}
-                />
+              {/* Panels stay mounted, so chat keeps its history and unread count while hidden. */}
+              <div className="min-h-0 flex-1">
+                <div hidden={rightTab !== 'Users'} className="h-full overflow-y-auto">
+                  <PresenceSidebar
+                    self={{ userId: self.id, name: self.displayName }}
+                    peers={peers}
+                    filePath={pathOf}
+                    following={following}
+                    onFollow={(clientId) => follow?.follow(clientId)}
+                    onStopFollowing={() => follow?.stop()}
+                  />
+                </div>
+                <div hidden={rightTab !== 'Chat'} className="h-full">
+                  {chat(rightTab === 'Chat')}
+                </div>
+                <div hidden={rightTab !== 'Comments'} className="h-full">
+                  <CommentsPanel
+                    session={session}
+                    fileId={activeFileId}
+                    selfId={self.id}
+                    isOwner={isOwner}
+                    names={names}
+                    editor={activeEditor}
+                    onLines={onLines}
+                  />
+                </div>
+                <div hidden={rightTab !== 'AI Review'} className="h-full">
+                  <ReviewPanel
+                    session={session}
+                    roomId={room.id}
+                    projectId={projectId}
+                    fileId={activeFileId}
+                    path={activeFileId ? pathOf(activeFileId) : undefined}
+                    canEdit={canEdit}
+                    editor={activeEditor}
+                    onFindings={onFindings}
+                  />
+                </div>
+                <div hidden={rightTab !== 'History'} className="h-full">
+                  <HistoryPanel
+                    session={session}
+                    projectId={projectId}
+                    fileId={activeFileId}
+                    canEdit={canEdit}
+                    onBlame={onBlame}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </Panel>
-      </Group>
+          </Panel>
+        </Group>
+      </main>
     </div>
   )
 }
@@ -591,18 +595,18 @@ export function WorkspacePage() {
 
   if (room.error) {
     return (
-      <div className="flex flex-col gap-2 p-6">
+      <main className="flex flex-col gap-2 p-6">
         <ErrorNotice error={room.error} />
         <Link to="/" className="text-sm underline">
           Back to your rooms
         </Link>
-      </div>
+      </main>
     )
   }
   if (fatalCode !== null || failed) {
     const removed = fatalCode === WsCloseCode.forbidden
     return (
-      <div className="flex flex-col gap-2 p-6">
+      <main className="flex flex-col gap-2 p-6">
         <ErrorNotice
           error={
             removed
@@ -613,9 +617,15 @@ export function WorkspacePage() {
         <Link to="/" className="text-sm underline">
           Back to your rooms
         </Link>
-      </div>
+      </main>
     )
   }
-  if (!detail || !session || !self || !projectId) return <Loading label="Opening the room…" />
+  if (!detail || !session || !self || !projectId) {
+    return (
+      <main>
+        <Loading label="Opening the room…" />
+      </main>
+    )
+  }
   return <Workspace room={detail} session={session} self={self} projectId={projectId} />
 }
