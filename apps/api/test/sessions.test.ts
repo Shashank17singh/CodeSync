@@ -102,6 +102,20 @@ describe('sessions', () => {
       expect((await refresh(api, session)).statusCode).toBe(401)
     })
 
+    // A revocation that runs while a refresh is still committing cannot see the new token, so it
+    // revokes only the parent. This sets up that state directly.
+    it('refuses a token whose parent was revoked during its own refresh', async () => {
+      const parent = await signedIn(api)
+      const child = sessionFrom(await refresh(api, parent))
+      await api.prisma.refreshToken.updateMany({
+        where: { tokenHash: hashToken(parent.refresh) },
+        data: { revokedAt: new Date() },
+      })
+      expect((await refresh(api, child)).statusCode).toBe(401)
+      const rows = await familyTokens(child)
+      expect(rows.every((row) => row.revokedAt !== null)).toBe(true)
+    })
+
     it('refuses an unknown token', async () => {
       const session = await signedIn(api)
       const response = await refresh(api, { ...session, refresh: 'made-up-token' })

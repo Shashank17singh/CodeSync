@@ -73,6 +73,16 @@ export class SessionService {
       return null
     }
     if (row.expiresAt <= new Date()) return null
+    // A revocation that ran while this token's own refresh was committing could not see this
+    // row and revoked only the parent. A revoked parent therefore ends this token too.
+    const parent = await this.prisma.refreshToken.findFirst({
+      where: { replacedById: row.id },
+      select: { revokedAt: true },
+    })
+    if (parent?.revokedAt) {
+      await this.revokeFamily(row.familyId)
+      return null
+    }
 
     const nextToken = randomToken()
     const next = this.refreshRow(row.userId, row.familyId, nextToken, userAgent)

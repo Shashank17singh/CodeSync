@@ -9,6 +9,7 @@ import {
   type RoomFixture,
   type TestApi,
 } from './helpers.js'
+import { INVITE_EMAILS_PER_HOUR } from '../src/modules/invites.js'
 
 describe('invites', () => {
   let api: TestApi
@@ -150,6 +151,23 @@ describe('invites', () => {
     expect((await accept(other, token)).statusCode).toBe(403)
     expect((await accept(invited, token)).statusCode).toBe(200)
     expect(await roleOf(invited)).toBe('EDITOR')
+  })
+
+  it('limits how many invite emails one user can send, but not invite links', async () => {
+    fixture = await createRoomFixture(api)
+    const send = (payload: object) =>
+      api.app.inject(
+        as(fixture.owner, { method: 'POST', url: `/rooms/${fixture.roomId}/invites`, payload }),
+      )
+    for (let index = 0; index < INVITE_EMAILS_PER_HOUR; index++) {
+      const response = await send({ role: 'VIEWER', email: `guest${index}@test.local` })
+      expect(response.statusCode).toBe(201)
+    }
+    const sentBefore = api.mailer.sent.length
+    const refused = await send({ role: 'VIEWER', email: 'one-too-many@test.local' })
+    expect(refused.statusCode).toBe(429)
+    expect(api.mailer.sent.length).toBe(sentBefore)
+    expect((await send({ role: 'VIEWER' })).statusCode).toBe(201)
   })
 
   it('refuses to invite anyone as owner', async () => {

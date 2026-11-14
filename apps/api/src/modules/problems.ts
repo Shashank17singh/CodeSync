@@ -1,13 +1,12 @@
 import type { PrismaClient } from '@codesync/db'
 import { EXECUTION_LIMITS } from '@codesync/shared'
 import type { FastifyInstance } from 'fastify'
-import { unzipSync } from 'fflate'
 import { z } from 'zod'
 import type { AppDeps } from '../app.js'
 import { ApiError, assertExecutionEnabled, forbidden, invalid, notFound } from '../lib/errors.js'
 import { rankSubmissions } from '../lib/leaderboard.js'
 import { fingerprint, similarity, tokenize } from '../lib/winnow.js'
-import { ZIP_LIMITS } from '../lib/zip.js'
+import { unzipBounded } from '../lib/zip.js'
 import { requireRoom } from './access.js'
 import { assertServiceToken } from './executions.js'
 import { MINUTE, enforceRateLimits } from './auth/rateLimit.js'
@@ -124,22 +123,16 @@ interface TestPair {
 
 // Accepts `1.in`, `1.out`, `sample1.in` and so on. Names starting with "sample" are visible.
 export function readTestArchive(archive: Uint8Array): TestPair[] {
-  let expandedBytes = 0
-  let entries: Record<string, Uint8Array>
-  try {
-    entries = unzipSync(archive, {
-      filter: (file) => {
-        expandedBytes += file.originalSize
-        if (expandedBytes > ZIP_LIMITS.maxExpandedBytes) {
-          throw invalid('archive_too_large', 'The archive expands to too much data')
-        }
-        return !file.name.endsWith('/') && !file.name.startsWith('__MACOSX/')
-      },
-    })
-  } catch (error) {
-    if (error instanceof ApiError) throw error
-    throw invalid('invalid_archive', 'The file is not a valid zip archive')
-  }
+  let count = 0
+  const entries = unzipBounded(archive, (file) => {
+    if (file.name.endsWith('/') || file.name.startsWith('__MACOSX/')) return false
+    count += 1
+    // An input and an output per test.
+    if (count > MAX_TEST_PAIRS * 2) {
+      throw invalid('too_many_tests', `A problem can have at most ${MAX_TEST_PAIRS} tests`)
+    }
+    return true
+  })
 
   const inputs = new Map<string, Uint8Array>()
   const outputs = new Map<string, Uint8Array>()

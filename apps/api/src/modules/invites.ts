@@ -5,8 +5,12 @@ import { z } from 'zod'
 import type { AppDeps } from '../app.js'
 import { ApiError, forbidden, notFound } from '../lib/errors.js'
 import { requireRoom } from './access.js'
+import { AUTH_LIMITS, HOUR, enforceRateLimits, ipKey } from './auth/rateLimit.js'
 
 const INVITE_AUDIENCE = 'invite'
+// Each email goes out from our sender with a room name the user chose, so it is capped like
+// the other emails we send on a user's behalf.
+export const INVITE_EMAILS_PER_HOUR = 20
 const MAX_TOKEN_LENGTH = 2048
 
 const roomParams = z.object({ id: z.uuid() })
@@ -27,7 +31,7 @@ const inviteUnusable = (): ApiError =>
   new ApiError(410, 'invite_unusable', 'This invite has expired or is no longer valid')
 
 export function registerInviteRoutes(app: FastifyInstance, deps: AppDeps): void {
-  const { prisma, mailer, config } = deps
+  const { prisma, mailer, config, limiter } = deps
 
   app.get('/rooms/:id/invites', async (request) => {
     const { id } = roomParams.parse(request.params)
@@ -44,6 +48,20 @@ export function registerInviteRoutes(app: FastifyInstance, deps: AppDeps): void 
     const { id } = roomParams.parse(request.params)
     const { room } = await requireRoom(prisma, id, request.userId, 'invite.manage')
     const body = createInviteBody.parse(request.body)
+    if (body.email) {
+      await enforceRateLimits(
+        limiter,
+        [
+          {
+            key: `invite-email:user:${request.userId}`,
+            limit: INVITE_EMAILS_PER_HOUR,
+            windowMs: HOUR,
+          },
+          { key: ipKey('invite-email', request.ip), ...AUTH_LIMITS.emailPerIp },
+        ],
+        'Too many invite emails, try again later',
+      )
+    }
     const expiresAt = body.expiresInHours
       ? new Date(Date.now() + body.expiresInHours * 3_600_000)
       : null
