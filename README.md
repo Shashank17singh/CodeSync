@@ -111,7 +111,7 @@ CodeSync/
 │   ├── monitoring/       # Prometheus and Grafana
 │   └── nginx/            # Reverse proxy, HTTPS, security headers
 ├── loadtest/             # k6 scripts, local driver, results
-├── docs/                 # Architecture, security, deployment, feature guide, paper outline
+├── docs/                 # Architecture, security, deployment, feature guide
 └── .github/workflows/    # CI and integration tests
 ```
 
@@ -287,7 +287,6 @@ One server runs everything except code execution, judging and AI review, which s
 | Deployment                            | [deployment.md](docs/deployment.md)                      |
 | Load tests                            | [loadtest/README.md](loadtest/README.md)                 |
 | Run, test and trade-offs per feature  | [feature-guide.md](docs/feature-guide.md)                |
-| Paper outline                         | [ieee-outline.md](docs/paper/ieee-outline.md)            |
 
 ---
 
