@@ -42,6 +42,9 @@ on that date. "Configured" means the setting exists but nothing has exercised it
 | F8 | Zip import and problem test archives capped expansion by the sizes the archive declares. The decompressor does not hold an entry to its declared size, so a 10 MB upload could make the API inflate gigabytes on its main thread | High, availability | Archives are read as a stream and the cap counts bytes actually inflated. `zip.test.ts` uses archives that lie about their size |
 | F9 | Invite emails had no rate limit, unlike sign-up and reset emails, so the server could send unlimited mail carrying a user-chosen room name | Medium, abuse | 20 invite emails an hour per user and 60 per IP. Link invites are not limited. Tested |
 | F10 | A revocation (password reset or sign-out) running while a refresh was committing could miss the new token, which then outlived the revocation | Medium | Refreshing now fails when the token's parent was revoked, and ends the family. Tested |
+| F11 | An AI review in "why is it failing" mode with practice code skipped the room check, so any signed-in user with a run id could get another room's error output explained | Medium | The run's room is now checked for read access before its output is used. Tested |
+| F12 | Any user could create a room, attach any problem set to a contest, and read the titles of unpublished problems in it | Low | Contest pages list only published problems. Tested |
+| F13 | The page policy let Markdown in chat load images from any site, which showed each member's IP address to that site | Low | Images now load only from CodeSync itself. Browser test checks the policy |
 
 ## Accessibility
 

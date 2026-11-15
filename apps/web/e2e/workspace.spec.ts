@@ -484,6 +484,8 @@ test.describe('the pages around the workspace', () => {
     })
     const response = await page.goto('/login')
     expect(response?.headers()['content-security-policy']).toContain("script-src 'self'")
+    // An image in chat Markdown from another site would show members' IP addresses to it.
+    expect(response?.headers()['content-security-policy']).toContain("img-src 'self' data:;")
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
     expect(violations).toEqual([])
   })

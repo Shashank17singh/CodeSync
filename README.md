@@ -111,7 +111,7 @@ CodeSync/
 │   ├── monitoring/       # Prometheus and Grafana
 │   └── nginx/            # Reverse proxy, HTTPS, security headers
 ├── loadtest/             # k6 scripts, local driver, results
-├── docs/                 # Architecture, security, deployment, viva guide, paper outline
+├── docs/                 # Architecture, security, deployment, feature guide, paper outline
 └── .github/workflows/    # CI and integration tests
 ```
 
@@ -245,7 +245,7 @@ One server runs everything except code execution, judging and AI review, which s
 
 ## Known Limitations
 
-- The stack has not been started on a real server yet, so Nginx, HTTPS and the setup wizard are unproven. CI, including real Redis and the sandbox attack suite, passes.
+- The production Compose stack has run on one machine at `https://localhost` with a self-signed certificate. Sign-up with email verification, invites, live editing, a code run, judging and the review pipeline all worked through Nginx, and Prometheus and Grafana picked up the metrics. The review ran without an API key, so only the analyzers answered, not the model. It has not run on a real server, so Let's Encrypt, DNS, the firewall and the setup wizard are unproven. That local run used Docker's default runtime, not gVisor. CI, including real Redis and the sandbox attack suite, passes.
 - Passing the attack suite shows those attacks are contained, not that no other attack works.
 - The AI review has only been measured with static analyzers alone: 48% recall and 86% precision. The model evaluation needs an API key.
 - A one-server deployment has no code execution, judging or AI review, because sandboxes must not share a machine with the database.
@@ -253,7 +253,7 @@ One server runs everything except code execution, judging and AI review, which s
 - Restoring a snapshot is undone with a button, not Ctrl+Z, because Yjs undo only tracks a user's own edits.
 - Pushing a snapshot to GitHub is not built. Zip export is.
 - Accessibility has passed an automated scan and keyboard tests, but no one has tested it with a screen reader.
-- The latest security review was partial. It covered sign-in and resource limits but not room permissions, live editing, code execution, page rendering or deployment.
+- Room permissions, live editing, code execution, page rendering and deployment were reviewed by reading the code, not by an outside tester.
 
 ---
 
@@ -286,7 +286,7 @@ One server runs everything except code execution, judging and AI review, which s
 | Security                              | [report.md](docs/security/report.md)                     |
 | Deployment                            | [deployment.md](docs/deployment.md)                      |
 | Load tests                            | [loadtest/README.md](loadtest/README.md)                 |
-| Run, test and trade-offs per feature  | [viva-guide.md](docs/viva-guide.md)                      |
+| Run, test and trade-offs per feature  | [feature-guide.md](docs/feature-guide.md)                |
 | Paper outline                         | [ieee-outline.md](docs/paper/ieee-outline.md)            |
 
 ---

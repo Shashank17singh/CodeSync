@@ -48,6 +48,9 @@ const fileText = (page: Page, path: string): Promise<string> =>
   }, path)
 
 test.describe('presence in a real browser', () => {
+  // The harness page is served by the dev server only. A production build does not contain it.
+  test.skip(!!process.env['E2E_PRODUCTION'], 'The presence harness exists only on the dev server')
+
   let projectId: string
 
   test.beforeEach(() => {

@@ -355,6 +355,16 @@ describe('practice mode', () => {
       expect(response.statusCode).toBe(404)
     })
 
+    it('never shows an unpublished problem through a contest', async () => {
+      const draft = await createProblem({ published: false })
+      const { fixture, contest } = await contestWith(10, 60, draft.id)
+      const response = await api.app.inject(
+        as(fixture.owner, { method: 'GET', url: `/contests/${contest.id}` }),
+      )
+      expect(response.statusCode).toBe(200)
+      expect(response.body).not.toContain(draft.slug)
+    })
+
     it('refuses a problem from outside the contest', async () => {
       const inside = await withTests()
       const outside = await withTests()

@@ -1,12 +1,11 @@
-# Viva guide
+# Feature guide
 
-For each prompt: how to run it, how to test it, and three design trade-offs to defend. Commands run
+For each feature: how to run it, how to test it, and three design trade-offs. Commands run
 from the repository root after the setup in the [README](../README.md).
 
-Each trade-off states the choice, what it costs, and why the cost was accepted. If an examiner
-pushes on one, name the cost first. It shows you weighed the decision.
+Each trade-off states the choice, what it costs, and why the cost was accepted.
 
-## 3.1 Real-time collaboration
+## Real-time collaboration
 
 - **Run:** `pnpm --filter @codesync/collab dev`
 - **Test:** `pnpm --filter @codesync/collab test`
@@ -21,7 +20,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
    the log is read before the document. A write to PostgreSQL on every keystroke would be far too
    slow, and Redis alone could lose data on a crash.
 
-## 3.2 Presence and live cursors
+## Presence and live cursors
 
 - **Run:** start collab and web, then open a room in two browsers.
 - **Test:** `pnpm --filter @codesync/web exec playwright test e2e/presence.spec.ts`
@@ -33,7 +32,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 3. **Own cursor rendering instead of y-monaco's.** More code to maintain. y-monaco cannot tell which
    file a peer is in, and cannot show labels or fade them.
 
-## 3.3 Rooms, projects and files API
+## Rooms, projects and files API
 
 - **Run:** `pnpm --filter @codesync/api dev`
 - **Test:** `pnpm --filter @codesync/api exec vitest run test/rooms.test.ts test/files.test.ts`
@@ -44,7 +43,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
    it, two instances could create competing Y.Text objects and silently lose edits to one.
 3. **404 for outsiders, 403 for members.** Harder to debug. It stops anyone probing which rooms exist.
 
-## 3.4 Authentication
+## Authentication
 
 - **Run:** start the API, then sign up. The mail appears in Mailpit.
 - **Test:** `pnpm --filter @codesync/api exec vitest run test/auth.test.ts test/sessions.test.ts test/oauth.test.ts`
@@ -56,7 +55,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 3. **Password required on the verification page.** One extra step for users. A mail scanner opening
    the link cannot verify an account, and neither can someone who registered another person's address.
 
-## 3.5 Sandboxed execution
+## Sandboxed execution
 
 - **Run:** see the [executor README](../services/executor/README.md). Needs Docker.
 - **Test:** `cd services/executor && .venv/bin/pytest -m "not docker and not redis"`. The attack suite
@@ -69,7 +68,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 3. **Python, where the prompt preferred Go.** Slower under load, but the Docker SDK and BullMQ client
    are mature, the work is mostly waiting on containers, and the static analyzers are Python too.
 
-## 3.6 Queue and workers
+## Queue and workers
 
 - **Run:** API, Redis and a worker. Needs Redis.
 - **Test:** `pnpm --filter @codesync/api exec vitest run test/executions.test.ts`
@@ -81,7 +80,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 3. **Worker reports through the API.** One extra hop. The database credentials stay off the executor
    host, which is the machine most likely to be compromised.
 
-## 3.7 Online judge
+## Online judge
 
 - **Run:** the Practice pages, with a worker running.
 - **Test:** `pnpm --filter @codesync/api exec vitest run test/problems.test.ts`
@@ -93,7 +92,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 3. **ICPC scoring with a contest freeze.** Fewer live updates near the end. It is a known format, and
    the owner still sees everything.
 
-## 3.8 AI code review
+## AI code review
 
 - **Run:** the AI Review tab. Without `ANTHROPIC_API_KEY`, only static analyzers run.
 - **Test:** `cd services/executor && .venv/bin/pytest tests/test_review.py`
@@ -105,7 +104,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 3. **Enforcing the practice rule after the reply.** A reply can be thrown away. A prompt alone cannot
    guarantee the model will not give the full solution.
 
-## 3.9 Chat and inline comments
+## Chat and inline comments
 
 - **Run:** the Chat and Comments tabs in a room.
 - **Test:** `pnpm --filter @codesync/collab exec vitest run test/chat.test.ts` and
@@ -119,7 +118,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 3. **A deliberately short profanity list with whole-word matching.** Determined users get through. A
    complete filter mostly catches innocent words, such as Scunthorpe.
 
-## 3.10 Version history
+## Version history
 
 - **Run:** the History tab.
 - **Test:** `pnpm --filter @codesync/api exec vitest run test/history.test.ts`
@@ -134,7 +133,7 @@ pushes on one, name the cost first. It shows you weighed the decision.
 
 More detail is in [version-history.md](architecture/version-history.md).
 
-## 3.11 Frontend
+## Frontend
 
 - **Run:** `pnpm --filter @codesync/web dev`
 - **Test:** `pnpm --filter @codesync/web test`, `pnpm --filter @codesync/web test:e2e`, and
@@ -150,7 +149,7 @@ More detail is in [version-history.md](architecture/version-history.md).
 Debugging story worth telling: the Vim and Emacs libraries passed the type checker and the build but
 failed at run time, one only in the production bundle. Testing that bundle in a browser caught it.
 
-## 3.12 Testing and deployment
+## Testing and deployment
 
 - **Run:** see Deployment in the [README](../README.md). Needs Docker.
 - **Test:** `cd loadtest && pnpm local`, then `pnpm report`. Results are in

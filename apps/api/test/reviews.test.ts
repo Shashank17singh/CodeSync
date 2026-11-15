@@ -98,6 +98,37 @@ describe('reviews', () => {
     expect(response.statusCode).toBe(404)
   })
 
+  it('refuses to explain a run from a room the user cannot read', async () => {
+    const fixture = await createRoomFixture(api)
+    const execution = await api.prisma.execution.create({
+      data: {
+        roomId: fixture.roomId,
+        projectId: fixture.projectId,
+        userId: fixture.owner,
+        language: 'PYTHON',
+        entryPath: 'main.py',
+        stderr: 'SECRET_STDERR',
+      },
+    })
+    const stranger = await createUser(api.prisma)
+    const response = await api.app.inject(
+      as(stranger, {
+        method: 'POST',
+        url: '/reviews',
+        payload: {
+          mode: 'WHY_FAILING',
+          language: 'PYTHON',
+          problemId: await practiceProblem(),
+          code: 'print(1)',
+          roomId: fixture.roomId,
+          executionId: execution.id,
+        },
+      }),
+    )
+    expect(response.statusCode).toBe(404)
+    expect(JSON.stringify(api.queue.reviewJobs)).not.toContain('SECRET_STDERR')
+  })
+
   it('reviews only the selected lines', async () => {
     const fixture = await createRoomFixture(api)
     await api.app.inject(

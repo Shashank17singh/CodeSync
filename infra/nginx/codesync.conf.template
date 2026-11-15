@@ -49,7 +49,7 @@ server {
   add_header X-Frame-Options DENY always;
   # Monaco injects inline styles and starts workers from blob URLs. Browser tests run the
   # production bundle under this exact policy, so a change here is tested there.
-  add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+  add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' wss:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
 
   # Worker callbacks use a service token and must never be reachable from outside.
   location /api/v1/internal/ {

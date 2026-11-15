@@ -506,7 +506,15 @@ export function registerProblemRoutes(app: FastifyInstance, deps: AppDeps): void
     const contest = await prisma.contest.findUnique({
       where: { id },
       include: {
-        problemSet: { select: { problems: { select: { id: true, slug: true, title: true } } } },
+        // Any room owner can attach any set, so drafts in it must stay hidden here.
+        problemSet: {
+          select: {
+            problems: {
+              where: { publishedAt: { not: null } },
+              select: { id: true, slug: true, title: true },
+            },
+          },
+        },
       },
     })
     if (!contest) throw notFound('Contest')

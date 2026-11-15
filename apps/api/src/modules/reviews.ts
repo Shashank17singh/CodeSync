@@ -120,8 +120,11 @@ export function registerReviewRoutes(app: FastifyInstance, deps: AppDeps): void 
 
     let errorOutput = ''
     if (body.mode === 'WHY_FAILING' && body.executionId) {
+      if (!body.roomId) throw notFound('Run')
+      // Practice requests skip the room check above, so the run's room is checked here.
+      await requireRoom(prisma, body.roomId, request.userId, 'file.read')
       const execution = await prisma.execution.findFirst({
-        where: { id: body.executionId, roomId: body.roomId ?? '' },
+        where: { id: body.executionId, roomId: body.roomId },
         select: { stderr: true, compileOutput: true },
       })
       if (!execution) throw notFound('Run')

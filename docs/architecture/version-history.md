@@ -47,7 +47,7 @@ snapshot lets anyone in the room undo it, including people who did not start it.
 Every Yjs item keeps the id of the client that created it, and `YjsClient` maps client ids to users
 as updates arrive. A line goes to the user who wrote most of its characters.
 
-Limits to state in the viva:
+Known limits:
 
 - Deletions are not attributed, because a deletion advances no clock. The same applies to the
   author list of a snapshot.
