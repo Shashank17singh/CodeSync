@@ -2,6 +2,8 @@
 
 A browser-based code editor where a whole room types in the same file, with live cursors, chat, version history, AI code review, sandboxed execution and an online judge.
 
+![CodeSync room dashboard: rooms list, create room with template, and join by invite link](codesync.png)
+
 ## Overview
 
 CodeSync lets a group edit the same project at once in the browser. Edits merge through a CRDT, so nobody waits on a lock and work typed offline syncs on reconnect. Around the editor sit room chat, comments pinned to code, a timeline of snapshots you can restore, AI review, and a judge for practice problems and contests.
