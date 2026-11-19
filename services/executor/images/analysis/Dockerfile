@@ -1,7 +1,8 @@
 FROM eclipse-temurin:21-jdk-alpine@sha256:b78a1d385da875588e21207f07dddf9a1418849971ae857fb24c8f3a7d441a72
 ENV PMD_VERSION=7.29.0
+# hadolint ignore=DL3018
 RUN apk add --no-cache python3 py3-pip nodejs npm cppcheck~2.21 unzip curl \
-  && pip install --break-system-packages ruff==0.17.3 lizard==1.24.3 \
+  && pip install --no-cache-dir --break-system-packages ruff==0.17.3 lizard==1.24.3 \
   && npm install -g eslint@10.14.0 @eslint/js@10.0.1 \
   && curl -fsSL -o /tmp/pmd.zip "https://github.com/pmd/pmd/releases/download/pmd_releases%2F${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip" \
   && unzip -q /tmp/pmd.zip -d /opt \

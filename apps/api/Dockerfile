@@ -12,6 +12,6 @@ FROM node:22-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app .
-USER node
+USER 1000:1000
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
