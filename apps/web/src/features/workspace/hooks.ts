@@ -3,8 +3,11 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { api } from '../../lib/api'
 import { connectionState, type ConnectionState } from './model'
 
-const collabUrl = (): string =>
-  `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/collab`
+const collabUrl = (): string => {
+  const envCollab = import.meta.env.VITE_COLLAB_URL as string | undefined
+  if (envCollab) return envCollab
+  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/collab`
+}
 
 export interface CollabHandle {
   session: CollabSession | null
