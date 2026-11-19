@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm --filter @codesync/shared build && pnpm --filter @codesync/collab-client build && pnpm --filter @codesync/web build",
-  "outputDirectory": "apps/web/dist",
+  "buildCommand": "pnpm --filter @codesync/shared build && pnpm --filter @codesync/collab-client build && pnpm --filter @codesync/web build && node -e \"require('fs').cpSync('apps/web/dist', 'dist', {recursive: true})\"",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
