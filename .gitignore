@@ -9,3 +9,4 @@ coverage/
 packages/db/src/generated/
 test-results/
 playwright-report/
+.neon

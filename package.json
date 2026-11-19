@@ -14,5 +14,9 @@
   },
   "devDependencies": {
     "oxlint": "1.90.0"
+  },
+  "dependencies": {
+    "@neon/config": "^1.14.3",
+    "@neon/env": "^2.1.6"
   }
 }
