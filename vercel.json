@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @codesync/shared build && pnpm --filter @codesync/collab-client build && pnpm --filter @codesync/web build && node -e \"require('fs').cpSync('apps/web/dist', 'dist', {recursive: true})\"",
+  "buildCommand": "node scripts/build-vercel.mjs",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
