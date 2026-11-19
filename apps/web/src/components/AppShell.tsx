@@ -10,7 +10,9 @@ export function AppShell() {
   return (
     <div className="flex min-h-full flex-col">
       <header className="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
-        <span className="mr-4 text-base font-medium tracking-tight">CodeSync</span>
+        <NavLink to="/" className="mr-4 text-base font-semibold tracking-tight text-ink hover:text-accent">
+          CodeSync
+        </NavLink>
         <nav aria-label="Main" className="flex gap-1">
           <NavLink to="/" end className={linkClass}>
             Rooms
@@ -30,6 +32,25 @@ export function AppShell() {
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
         <Outlet />
       </main>
+      <footer className="mt-auto border-t border-line bg-surface py-5 text-xs text-muted">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-4 sm:flex-row">
+          <p>© {new Date().getFullYear()} CodeSync. Built by Shashank Singh.</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <a href="https://github.com/Shashank17singh/CodeSync" target="_blank" rel="noopener noreferrer" className="hover:text-ink">
+              GitHub
+            </a>
+            <a href="https://shashank17singh.github.io" target="_blank" rel="noopener noreferrer" className="hover:text-ink">
+              Portfolio
+            </a>
+            <a href="mailto:shashanksingh1709@gmail.com" className="hover:text-ink">
+              Email
+            </a>
+            <a href="tel:+917905851722" className="hover:text-ink">
+              +91 79058 51722
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

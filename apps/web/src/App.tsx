@@ -29,6 +29,7 @@ const ProblemListPage = named(practice, 'ProblemListPage')
 const ProblemPage = named(practice, 'ProblemPage')
 const LeaderboardPage = named(practice, 'LeaderboardPage')
 const ContestPage = named(practice, 'ContestPage')
+const NotFoundPage = named(() => import('./features/NotFoundPage'), 'NotFoundPage')
 
 // The invite token sits in the URL fragment, which has to survive the trip through sign-in.
 function RequireSession() {
@@ -70,7 +71,7 @@ export function App() {
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>
