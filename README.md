@@ -1,6 +1,7 @@
 # CodeSync
 
 [![Vercel](https://img.shields.io/badge/Vercel-Live%20Demo-black?logo=vercel)](https://code-sync-vert.vercel.app/)
+[![Neon](https://img.shields.io/badge/Neon-Serverless%20Postgres-00E599?logo=postgresql)](https://neon.tech)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org)
@@ -9,8 +10,9 @@
 
 A browser-based code editor where a whole room types in the same file, with live cursors, chat, version history, AI code review, sandboxed execution and an online judge.
 
-> **Live Deployment:**
+> **Live Deployments:**
 > * **Interactive Web Platform (Vercel):** [code-sync-vert.vercel.app](https://code-sync-vert.vercel.app/)
+> * **Cloud Database (Neon Lakebase):** Serverless PostgreSQL 16 on AWS US-East with connection pooling and automated branch migrations
 
 ## Overview
 
@@ -92,7 +94,7 @@ graph TD
 | Editor           | Monaco, y-monaco, xterm.js                                                     |
 | Collaboration    | Node.js, Yjs, y-protocols, WebSockets                                          |
 | API              | Fastify 5, Prisma 7, Zod, Argon2id, JWT with rotating refresh tokens           |
-| Data             | PostgreSQL 16, Redis 7                                                         |
+| Data             | PostgreSQL 16 (Neon Serverless), Redis 7                                       |
 | Execution        | Python 3.12, Docker Engine API, gVisor, BullMQ                                 |
 | AI Review        | Claude behind an abstract client, plus Ruff, ESLint, cppcheck, PMD and lizard  |
 | Testing          | Vitest, Playwright, axe, Pytest, k6                                            |
