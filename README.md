@@ -1,13 +1,5 @@
 # CodeSync
 
-[![Vercel](https://img.shields.io/badge/Vercel-Live%20Demo-black?logo=vercel)](https://code-sync-vert.vercel.app/)
-[![Neon](https://img.shields.io/badge/Neon-Serverless%20Postgres-00E599?logo=postgresql)](https://neon.tech)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org)
-[![Monaco Editor](https://img.shields.io/badge/Monaco%20Editor-0.57-1F8ACB?logo=visualstudiocode)](https://microsoft.github.io/monaco-editor/)
-[![Yjs CRDT](https://img.shields.io/badge/Yjs-CRDT%20Sync-orange)](https://yjs.dev)
-
 A browser-based code editor where a whole room types in the same file, with live cursors, chat, version history, AI code review, sandboxed execution and an online judge.
 
 > **Live Deployments:**
