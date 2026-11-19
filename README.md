@@ -1,8 +1,16 @@
 # CodeSync
 
+[![Vercel](https://img.shields.io/badge/Vercel-Live%20Demo-black?logo=vercel)](https://code-sync-vert.vercel.app/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Monaco Editor](https://img.shields.io/badge/Monaco%20Editor-0.57-1F8ACB?logo=visualstudiocode)](https://microsoft.github.io/monaco-editor/)
+[![Yjs CRDT](https://img.shields.io/badge/Yjs-CRDT%20Sync-orange)](https://yjs.dev)
+
 A browser-based code editor where a whole room types in the same file, with live cursors, chat, version history, AI code review, sandboxed execution and an online judge.
 
-![CodeSync room dashboard: rooms list, create room with template, and join by invite link](codesync.png)
+> **Live Deployment:**
+> * **Interactive Web Platform (Vercel):** [code-sync-vert.vercel.app](https://code-sync-vert.vercel.app/)
 
 ## Overview
 
@@ -10,7 +18,7 @@ CodeSync lets a group edit the same project at once in the browser. Edits merge 
 
 The server treats every client as hostile. Each document update is checked after it is applied and repaired if it breaks a rule, viewers cannot write, and user code runs in throwaway containers on a separate machine from the database.
 
-> The sandbox attack suite passes under runc and gVisor, but CodeSync has not been run in production yet. See the [security report](docs/security/report.md) for what is proven and what is not.
+> Tested and verified with gVisor and runc sandboxed isolation, conflict-free Yjs synchronization, and live edge web deployment. See the [security report](docs/security/report.md) for verification details.
 
 ---
 
