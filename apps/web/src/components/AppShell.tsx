@@ -5,6 +5,8 @@ import { Button } from './ui'
 const linkClass = ({ isActive }: { isActive: boolean }): string =>
   `inline-flex min-h-8 items-center rounded px-3 text-sm ${isActive ? 'bg-raised font-medium text-ink' : 'text-muted hover:text-ink'}`
 
+const CURRENT_YEAR = new Date().getFullYear()
+
 export function AppShell() {
   const { user, signOut } = useSession()
   return (
@@ -34,7 +36,7 @@ export function AppShell() {
       </main>
       <footer className="mt-auto border-t border-line bg-surface py-5 text-xs text-muted">
         <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-4 sm:flex-row">
-          <p>© {new Date().getFullYear()} CodeSync. Built by Shashank Singh.</p>
+          <p>© {CURRENT_YEAR} CodeSync. Built by Shashank Singh.</p>
           <div className="flex flex-wrap items-center gap-4">
             <a href="https://github.com/Shashank17singh/CodeSync" target="_blank" rel="noopener noreferrer" className="hover:text-ink">
               GitHub
