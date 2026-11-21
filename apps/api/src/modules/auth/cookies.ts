@@ -42,7 +42,13 @@ const webOrigin = (config: ApiConfig): string => new URL(config.publicWebUrl).or
 // cannot log a victim into the attacker's account. Clients without Origin are not browsers.
 export function rejectForeignOrigin(request: FastifyRequest, config: ApiConfig): void {
   const { origin } = request.headers
-  if (origin !== undefined && origin !== webOrigin(config)) throw forbidden('Request refused')
+  if (origin === undefined) return
+  const allowed = [
+    webOrigin(config),
+    'https://codesync-team.vercel.app',
+    'https://code-sync-vert.vercel.app',
+  ]
+  if (!allowed.includes(origin)) throw forbidden('Request refused')
 }
 
 // SameSite=Lax already withholds the cookie on cross-site POSTs. These two checks mean a single

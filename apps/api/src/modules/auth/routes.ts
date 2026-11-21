@@ -96,12 +96,15 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AppDeps): void {
     ])
     // Hashed before the lookup, so a taken address costs the same time as a free one.
     const passwordHash = await hashPassword(body.password)
+    const emailVerifiedAt = process.env.AUTO_VERIFY_SIGNUP === 'true' ? new Date() : null
     try {
       const user = await prisma.user.create({
-        data: { email: body.email, displayName: body.displayName, passwordHash },
+        data: { email: body.email, displayName: body.displayName, passwordHash, emailVerifiedAt },
         select: { id: true, email: true },
       })
-      sendInBackground(() => sendVerification(user))
+      if (!emailVerifiedAt) {
+        sendInBackground(() => sendVerification(user))
+      }
     } catch (error) {
       if ((error as { code?: string }).code !== PRISMA_UNIQUE_VIOLATION) throw error
     }

@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: codesync-backend
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: COLLAB_TOKEN_SECRET
+        generateValue: true
+      - key: INVITE_TOKEN_SECRET
+        generateValue: true
+      - key: OAUTH_STATE_SECRET
+        generateValue: true
+      - key: INTERNAL_SERVICE_TOKEN
+        generateValue: true
+      - key: PUBLIC_WEB_URL
+        value: https://codesync-team.vercel.app
+      - key: PUBLIC_API_URL
+        value: https://codesync-team.vercel.app
+      - key: ALLOWED_ORIGINS
+        value: https://codesync-team.vercel.app,https://code-sync-vert.vercel.app
+      - key: AUTO_VERIFY_SIGNUP
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: EXECUTION_ENABLED
+        value: "false"
+      - key: SMTP_URL
+        value: smtp://localhost:25
+      - key: MAIL_FROM
+        value: noreply@codesync.dev
+      - key: LOG_LEVEL
+        value: info
