@@ -3,6 +3,13 @@ map $http_upgrade $connection_upgrade {
   '' close;
 }
 
+# Allow Vercel frontends and local dev
+map $http_origin $cors_origin {
+  default "";
+  "~^https://.*\.vercel\.app$" "$http_origin";
+  "~^http://localhost(:\d+)?$" "$http_origin";
+}
+
 upstream api_server {
   server 127.0.0.1:3000;
 }
@@ -26,6 +33,19 @@ server {
 
   # Fastify REST API
   location /api/ {
+    if ($request_method = 'OPTIONS') {
+      add_header 'Access-Control-Allow-Origin' '$cors_origin' always;
+      add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
+      add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, x-csrf-token' always;
+      add_header 'Access-Control-Allow-Credentials' 'true' always;
+      add_header 'Content-Length' 0;
+      add_header 'Content-Type' 'text/plain charset=UTF-8';
+      return 204;
+    }
+
+    add_header 'Access-Control-Allow-Origin' '$cors_origin' always;
+    add_header 'Access-Control-Allow-Credentials' 'true' always;
+
     proxy_pass http://api_server;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
