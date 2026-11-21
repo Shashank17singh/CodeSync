@@ -42,6 +42,40 @@ function useSubmit(task: () => Promise<void>) {
   return { error, busy, submit }
 }
 
+function SocialAuthButtons({ actionText }: { actionText: string }) {
+  const [message, setMessage] = useState<string | null>(null)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            setMessage(`${actionText === 'sign in' ? 'GitHub sign-in' : 'GitHub account creation'} is not available yet. Please use email and password.`)
+          }
+          className={`${buttonClass()} flex-1`}
+        >
+          GitHub
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setMessage(`${actionText === 'sign in' ? 'Google sign-in' : 'Google account creation'} is not available yet. Please use email and password.`)
+          }
+          className={`${buttonClass()} flex-1`}
+        >
+          Google
+        </button>
+      </div>
+      {message && (
+        <p className="rounded border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-500">
+          {message}
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -85,14 +119,7 @@ export function LoginPage() {
           Sign in
         </Button>
       </form>
-      <div className="flex gap-2">
-        <a href="/api/v1/auth/oauth/github" className={`${buttonClass()} flex-1`}>
-          GitHub
-        </a>
-        <a href="/api/v1/auth/oauth/google" className={`${buttonClass()} flex-1`}>
-          Google
-        </a>
-      </div>
+      <SocialAuthButtons actionText="sign in" />
       <p className="flex justify-between text-sm text-muted">
         <Link to="/signup" className="underline">
           Create an account
@@ -157,6 +184,7 @@ export function SignupPage() {
           Create account
         </Button>
       </form>
+      <SocialAuthButtons actionText="account creation" />
       <Link to="/login" className="text-sm text-muted underline">
         Already have an account?
       </Link>
