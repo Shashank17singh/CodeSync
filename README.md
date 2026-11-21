@@ -3,7 +3,7 @@
 A browser-based code editor where a whole room types in the same file, with live cursors, chat, version history, AI code review, sandboxed execution and an online judge.
 
 > **Live Deployments:**
-> * **Interactive Web Platform (Vercel):** [code-sync-vert.vercel.app](https://code-sync-vert.vercel.app/)
+> * **Interactive Web Platform (Vercel):** [codesync-team.vercel.app](https://codesync-team.vercel.app)
 > * **Cloud Database (Neon Lakebase):** Serverless PostgreSQL 16 on AWS US-East with connection pooling and automated branch migrations
 
 ## Overview
