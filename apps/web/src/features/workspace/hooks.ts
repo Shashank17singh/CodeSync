@@ -6,6 +6,9 @@ import { connectionState, type ConnectionState } from './model'
 const collabUrl = (): string => {
   const envCollab = import.meta.env.VITE_COLLAB_URL as string | undefined
   if (envCollab) return envCollab
+  if (typeof location !== 'undefined' && location.hostname.includes('vercel.app')) {
+    return 'wss://codesync-backend-p8lc.onrender.com/collab'
+  }
   return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/collab`
 }
 
