@@ -10,3 +10,8 @@ packages/db/src/generated/
 test-results/
 playwright-report/
 .neon
+skills-lock.json
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
