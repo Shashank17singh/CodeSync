@@ -44,7 +44,7 @@ export function AppShell() {
             <a href="https://shashank17singh.github.io" target="_blank" rel="noopener noreferrer" className="hover:text-ink">
               Portfolio
             </a>
-            <a href="mailto:shashanksingh1709@gmail.com" className="hover:text-ink">
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=shashanksingh1709@gmail.com" target="_blank" rel="noopener noreferrer" className="hover:text-ink">
               Email
             </a>
             <a href="tel:+917905851722" className="hover:text-ink">
