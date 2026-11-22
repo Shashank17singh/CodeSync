@@ -4,7 +4,12 @@ A browser-based code editor where a whole room types in the same file, with live
 
 > **Live Deployments:**
 > * **Interactive Web Platform (Vercel):** [codesync-team.vercel.app](https://codesync-team.vercel.app)
+> * **Backend API & Collab Engine (Render):** [codesync-backend-p8lc.onrender.com](https://codesync-backend-p8lc.onrender.com)
 > * **Cloud Database (Neon Lakebase):** Serverless PostgreSQL 16 on AWS US-East with connection pooling and automated branch migrations
+>
+> **Demo Account:**
+> * **Email:** `demo@codesync.dev`
+> * **Password:** `DemoPassword123!`
 
 ## Overview
 
