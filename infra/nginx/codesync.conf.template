@@ -65,6 +65,7 @@ server {
   }
 
   location /collab/ {
+    access_log off;
     limit_conn sockets 20;
     proxy_pass http://collab_servers;
     proxy_http_version 1.1;
