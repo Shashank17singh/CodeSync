@@ -12,8 +12,13 @@ export function AppShell() {
   return (
     <div className="flex min-h-full flex-col">
       <header className="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
-        <NavLink to="/" className="mr-4 text-base font-semibold tracking-tight text-ink hover:text-accent">
-          CodeSync
+        <NavLink to="/" className="mr-4 inline-flex items-center gap-2 text-base font-semibold tracking-tight text-ink hover:text-accent">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-[#1c1a17] shadow-sm ring-1 ring-white/10" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 10L5.5 16L11 22M21 10L26.5 16L21 22M18 9L14 23" stroke="#d29a3c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </span>
+          <span>CodeSync</span>
         </NavLink>
         <nav aria-label="Main" className="flex gap-1">
           <NavLink to="/" end className={linkClass}>
