@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="logo.svg" width="72" height="72" alt="CodeSync Logo" />
-</p>
-
 # CodeSync
 
 A browser-based code editor where a whole room types in the same file, with live cursors, chat, version history, AI code review, sandboxed execution and an online judge.
