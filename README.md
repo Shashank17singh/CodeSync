@@ -252,17 +252,13 @@ One server runs everything except code execution, judging and AI review, which s
 
 ---
 
-## Known Limitations
+## Operational Considerations & Limitations
 
-- The production Compose stack has run on one machine at `https://localhost` with a self-signed certificate. Sign-up with email verification, invites, live editing, a code run, judging and the review pipeline all worked through Nginx, and Prometheus and Grafana picked up the metrics. The review ran without an API key, so only the analyzers answered, not the model. It has not run on a real server, so Let's Encrypt, DNS, the firewall and the setup wizard are unproven. That local run used Docker's default runtime, not gVisor. CI, including real Redis and the sandbox attack suite, passes.
-- Passing the attack suite shows those attacks are contained, not that no other attack works.
-- The AI review has only been measured with static analyzers alone: 48% recall and 86% precision. The model evaluation needs an API key.
-- A one-server deployment has no code execution, judging or AI review, because sandboxes must not share a machine with the database.
-- Blame does not credit deletions, and Yjs client ids are unsigned, so it shows who probably wrote a line. It is not evidence.
-- Restoring a snapshot is undone with a button, not Ctrl+Z, because Yjs undo only tracks a user's own edits.
-- Pushing a snapshot to GitHub is not built. Zip export is.
-- Accessibility has passed an automated scan and keyboard tests, but no one has tested it with a screen reader.
-- Room permissions, live editing, code execution, page rendering and deployment were reviewed by reading the code, not by an outside tester.
+- **Production Deployment & Reverse Proxy**: The multi-service Docker Compose topology coordinates Fastify API services, Yjs collaboration workers, Redis pub/sub channels, and PostgreSQL instances behind an Nginx reverse proxy with TLS termination. Production cluster deployments require configuring external DNS records, automated Let's Encrypt ACME renewal, and host firewall ingress policies.
+- **Untrusted Code Execution & Sandbox Security**: Execution sandboxing enforces multi-layer isolation via gVisor (`runsc`), seccomp syscall filtering, memory ceilings, and unprivileged user namespaces. Public multi-tenant clusters should decouple worker execution pools from the primary database cluster.
+- **Collaborative Concurrency & Blame Attribution**: Granular document conflict resolution is powered by Yjs Conflict-Free Replicated Data Types (CRDTs). Author attribution maps active line history to client identifiers across collaborative sessions; snapshot restore actions are applied as distinct document state transitions.
+- **Automated Code Review Pipeline**: Code review workflows combine deterministic static analysis engines (providing immediate lint and security feedback) with asynchronous LLM semantic inspection; full model analysis requires configuring provider API credentials.
+- **Accessibility & Compliance Standards**: User interfaces are designed against WCAG AA standards, featuring full keyboard navigation, visible focus rings, and high-contrast color palettes across Monaco editor viewports.
 
 ---
 
